@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  sinatra:
+    build: .
+    volumes:
+      - ./:/app/
+    ports:
+      - "4567:80"
