@@ -4,6 +4,6 @@ services:
   sinatra:
     build: .
     volumes:
-      - ./:/app/
+      - ./:/app:rw
     ports:
       - "4567:80"
