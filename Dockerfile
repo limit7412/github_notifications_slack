@@ -7,4 +7,4 @@ RUN gem install bundler
 EXPOSE 80
 RUN bundle install --gemfile="./Gemfile"
 
-CMD ["bundle","exec","ruby","src/app.rb","-p","80","-o","0.0.0.0"]
+CMD ["bundle","exec","ruby","src/app.rb"]
