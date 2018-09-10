@@ -1,5 +1,6 @@
 require 'json'
-require 'net/http'
+require 'pp'
+require "faraday"
 require 'uri'
 
 require 'octokit'
@@ -7,15 +8,18 @@ require 'octokit'
 client = Octokit::Client.new access_token: ENV['GITHUB_TOKEN']
 
 def get_notifications(client)
-  notifications = client
-    .notifications({all: true, since: '2016-01-06T23:39:01Z'})
+  return client
+    .notifications #({all: true, since: '2016-01-06T23:39:01Z'})
     .map{ |notice| {
         type: notice.subject.type,
         reason: notice.reason,
+        repository_name: notice.repository.full_name,
+        title: notice.subject.title,
+        avatar: notice.repository.owner.avatar_url,
+        comment_url: notice.subject.url,
+        subscription_url: notice.subscription_url,
       }
     }
-
-  return notifications
 end
 
 
@@ -23,13 +27,13 @@ def decision_type(type)
   subject = ''
   app = 'rin'
   if type == 'PullRequest'
-    subject = 'プルリクエストみたいです！\n一緒にレビューがんばりましょう！\n'
+    subject = 'プルリクエストみたいです！ 一緒にレビューがんばりましょう！'
     app = 'uduki'
   elsif  type == 'Issue'
-    subject = 'イシューみたい\n確認してみよっか\n'
+    subject = 'イシューみたい 確認してみよっか'
     app = 'rin'
   else
-    subject = "なにかあったみたい\n #{type}だって\n"
+    subject = "なにかあったみたい #{type}だって"
     app = 'rin'
   end
 
@@ -45,7 +49,7 @@ def decision_reason(reason)
      reason == 'author'    ||
      reason == 'comment'   ||
      reason == 'invitation'
-    mention = "<@#{ENV['SLACK_ID']}>"
+    mention = "<@#{ENV['SLACK_ID']}> "
   end
 
   return {
@@ -53,25 +57,76 @@ def decision_reason(reason)
   }
 end
 
-def api_post(params)
-  uri = URI.parse(ENV['WEBHOOK_URL'])
-  http = Net::HTTP.new(uri.host, uri.port)
-  http.use_ssl = true
-  http.start do
-    request = Net::HTTP::Post.new(uri.path)
-    request.set_form_data(payload: params.to_json)
-    http.request(request)
+def get_footer(name)
+  footer = ''
+  if !name.nil?
+    footer = name
+  else
+    footer = 'github'
   end
+
+  return {
+    footer: footer,
+  }
+end
+
+def get_body(url)
+  res = api_get(url,ENV['GITHUB_TOKEN'])
+  return {
+    author_name: res['user']['login'],
+    author_icon: res['user']['avatar_url'],
+    author_url: res['user']['html_url'],
+    body: res['body'],
+  }
+end
+
+def create_post(notice)
+  return {
+    post: {
+      fallback: notice[:subject],
+      author_name: notice[:author_name],
+      author_icon: notice[:author_icon],
+      pretext: "#{notice[:mention]}#{notice[:subject]}",
+      color: "#A9D0F5",
+      fields: [{
+        title: notice[:title],
+        value: notice[:body],
+      }],
+      footer: notice[:footer],
+      footer_icon: notice[:avatar],
+    }
+  }
+end
+
+def api_get(url,token)
+  uri = URI.parse url
+  conn = Faraday::Connection.new(:url => uri) do |builder|
+    # github
+    builder.use Faraday::Request::BasicAuthentication, "",token
+    builder.use Faraday::Adapter::NetHttp
+  end
+  res = conn.get
+  return JSON.load res.body
+end
+
+def api_post(url,params)
+  res = Faraday.post url, params.to_json
+  return res.body
 end
 
 # loop do
   notifications =  get_notifications(client)
   .map{ |notice| notice.merge( decision_type(notice[:type]) ) }
   .map{ |notice| notice.merge( decision_reason(notice[:reason]) ) }
+  .map{ |notice| notice.merge( get_footer(notice[:repository_name]) ) }
+  .map{ |notice| notice.merge( get_body(notice[:comment_url]) ) }
+  .map{ |notice| notice.merge( create_post(notice) ) }
 
-  # notifications.each do |params|
-  #   api_post(params)
-  # end
-  # api_post(notifications[0])
-  puts notifications[0]
+  if !notifications.empty?
+    notifications.each do |notice|
+      # pp notice[:author]
+      puts api_post(ENV['WEBHOOK_URL'],attachments:[notice[:post]])
+    end
+    # api_post(ENV['WEBHOOK_URL'],attachments:[notifications[0][:post]])
+  end
 # end
