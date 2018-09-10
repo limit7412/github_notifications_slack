@@ -9,7 +9,7 @@ client = Octokit::Client.new access_token: ENV['GITHUB_TOKEN']
 
 def get_notifications(client)
   return client
-    .notifications({all: true, since: '2018-09-07T23:39:01Z'})
+    .notifications #({all: true, since: '2018-09-07T23:39:01Z'})
     .map{ |notice| {
         type: notice.subject.type,
         reason: notice.reason,
