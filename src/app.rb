@@ -9,7 +9,7 @@ client = Octokit::Client.new access_token: ENV['GITHUB_TOKEN']
 
 def get_notifications(client)
   return client
-    .notifications({all: true, since: '2015-09-07T23:39:01Z'})
+    .notifications({all: true, since: '2018-09-07T23:39:01Z'})
     .map{ |notice| {
         type: notice.subject.type,
         reason: notice.reason,
@@ -51,7 +51,7 @@ def decision_reason(reason)
      reason == 'author'    ||
      reason == 'comment'   ||
      reason == 'invitation'
-    mention = "<#{ENV['SLACK_ID']}> "
+    mention = "<@#{ENV['SLACK_ID']}> "
   end
 
   return {
@@ -166,7 +166,7 @@ end
       end
 
       puts api_post(webhook,attachments:[notice[:post]])
-      # puts api_put('https://api.github.com/notifications',ENV['GITHUB_TOKEN'])
+      puts api_put('https://api.github.com/notifications',ENV['GITHUB_TOKEN'])
     end
   end
 # end
