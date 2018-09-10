@@ -24,7 +24,6 @@ def get_notifications(client)
     }
 end
 
-
 def decision_type(type)
   subject = ''
   app = 'rin'
@@ -148,7 +147,7 @@ def api_post(url,params)
   return res.body
 end
 
-# loop do
+def notifications_slack(client)
   notifications =  get_notifications(client)
   .map{ |notice| notice.merge( decision_type(notice[:type]) ) }
   .map{ |notice| notice.merge( decision_reason(notice[:reason]) ) }
@@ -169,4 +168,9 @@ end
       puts api_put('https://api.github.com/notifications',ENV['GITHUB_TOKEN'])
     end
   end
-# end
+end
+
+loop do
+  notifications_slack client
+  sleep 60
+end
