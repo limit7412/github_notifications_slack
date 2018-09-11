@@ -5,8 +5,6 @@ require 'uri'
 
 require 'octokit'
 
-client = Octokit::Client.new access_token: ENV['GITHUB_TOKEN']
-
 def get_notifications(client)
   return client
     .notifications #({all: true, since: '2018-09-07T23:39:01Z'})
@@ -25,31 +23,27 @@ def get_notifications(client)
 end
 
 def decision_type(type)
-  subject = ''
-  app = 'rin'
-  color = ''
   if type == 'PullRequest'
     subject = 'プルリクエストみたいです！ 一緒にレビューがんばりましょう！'
-    app = 'uduki'
+    webhook = ENV['WEBHOOK_URL_UDUKI']
     color = '#F6CEE3'
   elsif  type == 'Issue'
     subject = 'イシューみたい 確認してみよっか'
-    app = 'rin'
+    webhook = ENV['WEBHOOK_URL_RIN']
     color = '#A9D0F5'
   else
     subject = "なにかあったみたい #{type}だって"
-    app = 'rin'
+    webhook = ENV['WEBHOOK_URL_RIN']
     color = '#D8D8D8'
   end
 
   return {
     subject: subject,
-    app: app,
+    webhook: webhook,
   }
 end
 
 def decision_reason(reason)
-  mention = ''
   if reason == 'assign'    ||
      reason == 'author'    ||
      reason == 'comment'   ||
@@ -63,7 +57,6 @@ def decision_reason(reason)
 end
 
 def get_footer(name)
-  footer = ''
   if !name.nil?
     footer = name
   else
@@ -76,7 +69,6 @@ def get_footer(name)
 end
 
 def get_body(comment_url,latest_url)
-  body = ''
   if latest_url.nil?
     body = get_comment comment_url
   else
@@ -88,9 +80,6 @@ end
 
 def get_comment(url)
   res = api_get(url,ENV['GITHUB_TOKEN'])
-  author_name = ''
-  author_icon = ''
-  author_link = ''
   if !res['user'].nil?
     author_name = res['user']['login']
     author_icon = res['user']['avatar_url']
@@ -161,20 +150,21 @@ def notifications_slack(client)
 
   if !notifications.empty?
     notifications.each do |notice|
-      webhook = ''
-      if notice[:app] == 'uduki'
-        webhook = ENV['WEBHOOK_URL_UDUKI']
-      elsif notice[:app] == 'rin'
-        webhook = ENV['WEBHOOK_URL_RIN']
-      end
-
-      puts api_post(webhook,attachments:[notice[:post]])
+      puts api_post(notice[:webhook],attachments:[notice[:post]])
       puts api_put('https://api.github.com/notifications',ENV['GITHUB_TOKEN'])
     end
   end
 end
 
-loop do
-  notifications_slack client
-  sleep 60
+def main
+  client = Octokit::Client.new access_token: ENV['GITHUB_TOKEN']
+
+  loop do
+    notifications_slack client
+    sleep 60
+  end
+end
+
+if __FILE__ == $0
+  main
 end
