@@ -40,6 +40,7 @@ def decision_type(type)
   return {
     subject: subject,
     webhook: webhook,
+    color: color,
   }
 end
 
