@@ -141,6 +141,20 @@ def api_post(url,params)
   return res.body
 end
 
+def error_post(error)
+  message = 'エラーみたい…確認してみよっか'
+  post = {
+    fallback: message,
+    pretext: "<@#{ENV['SLACK_ID']}> #{message}",
+    title: error.message,
+    text: error.backtrace.join('\n'),
+    color: "#EB4646",
+    footer: "github_notifications_slack",
+  }
+  api_post(ENV['WEBHOOK_URL_IZUMI'],attachments:[post])
+end
+
+
 def notifications_slack(client)
   notifications =  get_notifications(client)
   .map{ |notice| notice.merge( decision_type(notice[:type]) ) }
@@ -158,10 +172,19 @@ def notifications_slack(client)
 end
 
 def main
-  client = Octokit::Client.new access_token: ENV['GITHUB_TOKEN']
+  begin
+    client = Octokit::Client.new access_token: ENV['GITHUB_TOKEN']
+  rescue => error
+    error_post error
+  end
 
   loop do
-    notifications_slack client
+    begin
+      notifications_slack client
+    rescue => error
+      error_post error
+    end
+
     sleep 60
   end
 end
