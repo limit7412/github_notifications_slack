@@ -27,15 +27,19 @@ end
 def decision_type(type)
   subject = ''
   app = 'rin'
+  color = ''
   if type == 'PullRequest'
     subject = 'プルリクエストみたいです！ 一緒にレビューがんばりましょう！'
     app = 'uduki'
+    color = '#F6CEE3'
   elsif  type == 'Issue'
     subject = 'イシューみたい 確認してみよっか'
     app = 'rin'
+    color = '#A9D0F5'
   else
     subject = "なにかあったみたい #{type}だって"
     app = 'rin'
+    color = '#D8D8D8'
   end
 
   return {
@@ -110,7 +114,7 @@ def create_post(notice)
       author_icon: notice[:author_icon],
       author_link: notice[:author_link],
       pretext: "#{notice[:mention]}#{notice[:subject]}",
-      color: "#A9D0F5",
+      color: notice[:color],
       title: notice[:title],
       title_link: notice[:title_link],
       text: notice[:body],
