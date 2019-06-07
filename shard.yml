@@ -1,0 +1,13 @@
+name: github_notifications_slack
+version: 0.1.0
+
+authors:
+  - limit7412 <qazx7412@newgenerations.im>
+
+targets:
+  github_notifications_slack:
+    main: src/github_notifications_slack.cr
+
+crystal: 0.28.0
+
+license: MIT
