@@ -3,3 +3,5 @@
 /bin/
 /.shards/
 *.dwarf
+
+github_notifications_slack
