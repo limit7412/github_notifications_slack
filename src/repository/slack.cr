@@ -7,10 +7,11 @@ class Slack
     @uri = URI.parse @url
   end
 
-  def send_post(message, title, text, color : String, slack_id : String)
+  def send_post(message, title, text, color : String, slack_id : String, is_mention : Boolian)
+    mention = is_mention ? "<@#{slack_id}> " : ""
     post = {
       fallback: message,
-      pretext:  "<@#{slack_id}> #{message}",
+      pretext:  "#{mention}#{message}",
       title:    title,
       text:     text,
       color:    color,
