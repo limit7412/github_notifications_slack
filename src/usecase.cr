@@ -1,7 +1,15 @@
 require "./repository/slack.cr"
+require "./repository/github.cr"
 
 class Usecase
   def initialize
+  end
+
+  def check_notifications
+    github = Github.new ENV["GITHUB_USER_NAME"], ENV["GITHUB_TOKEN"]
+
+    notices = github.get_notifications
+    puts notices
   end
 
   def error(err)

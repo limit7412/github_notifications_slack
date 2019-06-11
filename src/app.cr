@@ -8,7 +8,7 @@ class App
     uc = Usecase.new
 
     begin
-      puts "仲間だもんげ"
+      uc.check_notifications
     rescue err
       uc.error err
     end
