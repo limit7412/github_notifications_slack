@@ -1,4 +1,5 @@
 require "clim"
+require "./app.cr"
 
 module GithubNotificationsSlack
   class Cli < Clim
@@ -6,20 +7,18 @@ module GithubNotificationsSlack
 
     main do
       version "version: #{VERSION}", short: "-v"
-      # option "-t NAME", "--test=NAME",
-      #   type: String,
-      #   desc: "test.",
-      #   required: true
-      # option "-b", "--bool-test",
-      #   type: Bool,
-      #   desc: "hoge."
+      option "-b", "--bool-test",
+        type: Bool,
+        desc: "hoge."
 
       run do |opts, args|
-        # if opts.bool_test
-        #   puts "bool"
-        # end
-        # puts "#{opts.test}."
-        puts "test"
+        app = App.new
+
+        if opts.bool_test
+          app.run
+        else
+          app.run
+        end
       end
     end
   end
