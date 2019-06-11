@@ -6,6 +6,7 @@ class Usecase
 
   def error(err)
     slack = Slack.new ENV["WEBHOOK_URL_IZUMI"]
+
     slack.send_post(
       "エラーみたい…確認してみよっか",
       err.message,

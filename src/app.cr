@@ -8,6 +8,7 @@ class App
     uc = Usecase.new
 
     begin
+      puts "仲間だもんげ"
     rescue err
       uc.error err
     end
