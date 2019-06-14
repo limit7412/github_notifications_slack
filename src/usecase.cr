@@ -11,35 +11,35 @@ class Usecase
     notices = github.get_notifications
 
     notices.each do |line|
-      type = decision_type(line["type"])
-      is_mention = decision_reason(line["reason"])
+      type = decision_type line["type"]
+      mention = decision_reason line["reason"]
 
       if line["latest_url"].nil?
-        body = get_comment line["comment_url"]
+        comment = github.get_comment line["comment_url"]
       else
-        body = get_comment line["latest_url"]
+        comment = github.get_comment line["latest_url"]
       end
 
       slack = Slack.new type["webhook"]
 
-      slack.send_post
-
-      {
-        fallback:    notice[:subject],
-        author_name: notice[:author_name],
-        author_icon: notice[:author_icon],
-        author_link: notice[:author_link],
-        pretext:     "#{notice[:mention]}#{notice[:subject]}",
-        color:       notice[:color],
-        title:       notice[:title],
-        title_link:  notice[:title_link],
-        text:        notice[:body],
-        footer:      notice[:footer],
-        footer_icon: notice[:avatar],
+      post = {
+        fallback:    type[:subject],
+        author_name: comment[:name],
+        author_icon: comment[:icon],
+        author_link: comment[:author_link],
+        pretext:     "#{mention}#{type[:subject]}",
+        color:       type[:color],
+        title:       line[:title],
+        title_link:  comment[:title_link],
+        text:        comment[:body],
+        footer:      !line[:repository_name].nil? ? line[:repository_name] : "github",
+        footer_icon: line[:avatar],
       }
+
+      slack.send_post post
     end
 
-    if notices.length == 0
+    if notices.size != 0
       github.notification_to_read
     end
   end
@@ -47,16 +47,20 @@ class Usecase
   def error(err)
     slack = Slack.new ENV["WEBHOOK_URL_IZUMI"]
 
-    slack.send_post(
-      "エラーみたい…確認してみよっか",
-      err.message,
-      err.backtrace.join("\n"),
-      "#EB4646",
-      ENV["SLACK_ID"]
-    )
+    message = "エラーみたい…確認してみよっか"
+    post = {
+      fallback: message,
+      pretext:  "<@#{ENV["SLACK_ID"]}> #{message}",
+      title:    err.message,
+      text:     err.backtrace.join('\n'),
+      color:    "#EB4646",
+      footer:   "github_notifications_slack",
+    }
+
+    slack.send_post post
   end
 
-  private def decision_type(type)
+  private def decision_type(type : String)
     if type == "PullRequest"
       subject = "プルリクエストみたいです！ 一緒にレビューがんばりましょう！"
       webhook = ENV["WEBHOOK_URL_UDUKI"]
@@ -78,15 +82,15 @@ class Usecase
     }
   end
 
-  private def decision_reason(reason) : Boolian
-    is_mention = false
+  private def decision_reason(reason : String) : String
+    mention = ""
     if reason == "assign" ||
        reason == "author" ||
        reason == "comment" ||
        reason == "invitation"
-      is_mention = true
+      mention = "<@#{ENV["SLACK_ID"]}> "
     end
 
-    return is_mention
+    return mention
   end
 end

@@ -10,39 +10,54 @@ class Github
   end
 
   def get_notifications
-    res = @github.get "/notifications?all=true&since=2018-09-07T23:39:01Z"
-    # res = @github.get "/notifications"
+    # res = @github.get "/notifications?all=true&since=2018-09-07T23:39:01Z"
+    res = @github.get "/notifications"
 
     result = JSON.parse(res.body).as_a
 
     return result.map { |line| {
-      type:             line["subject"]["type"],
-      reason:           line["reason"],
-      repository_name:  line["repository"]["full_name"],
-      title:            line["subject"]["title"],
-      title_link:       line["repository"]["html_url"],
-      avatar:           line["repository"]["owner"]["avatar_url"],
-      comment_url:      line["subject"]["url"],
-      latest_url:       line["subject"]["latest_comment_url"],
-      subscription_url: line["subscription_url"],
+      type:             line["subject"]["type"].to_s,
+      reason:           line["reason"].to_s,
+      repository_name:  line["repository"]["full_name"].to_s,
+      title:            line["subject"]["title"].to_s,
+      title_link:       line["repository"]["html_url"].to_s,
+      avatar:           line["repository"]["owner"]["avatar_url"].to_s,
+      comment_url:      line["subject"]["url"].to_s,
+      latest_url:       line["subject"]["latest_comment_url"].to_s,
+      subscription_url: line["subscription_url"].to_s,
     } }
   end
 
   def get_comment(url : String)
     res = @github.get url
 
-    if !res["user"].nil?
-      author_name = res["user"]["login"]
-      author_icon = res["user"]["avatar_url"]
-      author_link = res["user"]["html_url"]
+    begin
+      result = JSON.parse(res.body)
+    rescue err
+      return {
+        name:        "",
+        icon:        "",
+        author_link: "",
+        title_link:  "",
+        body:        "",
+      }
+    end
+
+    name = ""
+    icon = ""
+    link = ""
+    if !result["user"].nil?
+      name = result["user"]["login"]
+      icon = result["user"]["avatar_url"]
+      link = result["user"]["html_url"]
     end
 
     return {
-      author_name: author_name,
-      author_icon: author_icon,
-      author_link: author_link,
-      title_link:  res["html_url"],
-      body:        res["body"],
+      name:        name.to_s,
+      icon:        icon.to_s,
+      author_link: link.to_s,
+      title_link:  result["html_url"].to_s,
+      body:        result["body"].to_s,
     }
   end
 
