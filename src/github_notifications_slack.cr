@@ -7,17 +7,17 @@ module GithubNotificationsSlack
 
     main do
       version "version: #{VERSION}", short: "-v"
-      option "-b", "--bool-test",
+      option "-c", "--continue",
         type: Bool,
-        desc: "hoge."
+        desc: "Continue to run."
 
       run do |opts, args|
         worker = Worker.new
 
-        if opts.bool_test
+        if opts.continue
           worker.run
         else
-          worker.run
+          worker.exec
         end
       end
     end
