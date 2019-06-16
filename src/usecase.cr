@@ -11,16 +11,16 @@ class Usecase
     notices = github.get_notifications
 
     notices.each do |line|
-      type = decision_type line["type"]
-      mention = decision_reason line["reason"]
+      type = decision_type line[:type]
+      mention = decision_reason line[:reason]
 
       if line["latest_url"].blank?
-        comment = github.get_comment line["comment_url"]
+        comment = github.get_comment line[:comment_url]
       else
-        comment = github.get_comment line["latest_url"]
+        comment = github.get_comment line[:latest_url]
       end
 
-      slack = Slack.new type["webhook"]
+      slack = Slack.new type[:webhook]
 
       post = {
         fallback:    type[:subject],
