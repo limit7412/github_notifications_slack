@@ -1,5 +1,5 @@
 require "clim"
-require "./app.cr"
+require "./worker.cr"
 
 module GithubNotificationsSlack
   class Cli < Clim
@@ -12,12 +12,12 @@ module GithubNotificationsSlack
         desc: "hoge."
 
       run do |opts, args|
-        app = App.new
+        worker = Worker.new
 
         if opts.bool_test
-          app.run
+          worker.run
         else
-          app.run
+          worker.run
         end
       end
     end

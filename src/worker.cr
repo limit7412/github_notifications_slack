@@ -1,6 +1,6 @@
 require "./usecase.cr"
 
-class App
+class Worker
   def initialize
   end
 
