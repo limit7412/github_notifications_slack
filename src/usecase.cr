@@ -6,6 +6,7 @@ class Usecase
   end
 
   def check_notifications
+    raise "errorテスト"
     github = Github.new ENV["GITHUB_USER_NAME"], ENV["GITHUB_TOKEN"]
 
     notices = github.get_notifications
@@ -54,7 +55,7 @@ class Usecase
       title:    err.message,
       text:     err.backtrace.join('\n'),
       color:    "#EB4646",
-      footer:   "github_notifications_slack",
+      footer:   "github_notifications_slack by #{!ENV["MYNAME"]? ? ENV["MYNAME"] : "unknown"}",
     }
 
     slack.send_post post
