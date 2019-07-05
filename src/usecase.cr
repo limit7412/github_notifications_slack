@@ -54,7 +54,7 @@ class Usecase
       title:    err.message,
       text:     err.backtrace.join('\n'),
       color:    "#EB4646",
-      footer:   "github_notifications_slack by #{!ENV["MYNAME"]? ? ENV["MYNAME"] : "unknown"}",
+      footer:   "github_notifications_slack by #{ENV["MYNAME"]? ? ENV["MYNAME"] : "unknown"}",
     }
 
     slack.send_post post
