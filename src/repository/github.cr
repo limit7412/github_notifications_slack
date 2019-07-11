@@ -43,13 +43,14 @@ class Github
       }
     end
 
-    name = ""
-    icon = ""
-    link = ""
-    if !result["user"].nil?
+    begin
       name = result["user"]["login"]
       icon = result["user"]["avatar_url"]
       link = result["user"]["html_url"]
+    rescue err
+      name = ""
+      icon = ""
+      link = ""
     end
 
     return {
