@@ -10,7 +10,7 @@ class Github
   end
 
   def get_notifications
-    # res = @github.get "/notifications?all=true&since=2018-09-07T23:39:01Z"
+    # res = @github.get "/notifications?all=true&since=2019-07-10T23:39:01Z"
     res = @github.get "/notifications"
 
     result = JSON.parse(res.body).as_a
@@ -53,12 +53,18 @@ class Github
       link = ""
     end
 
+    begin
+      body = result["body"].to_s
+    rescue err
+      body = nil
+    end
+
     return {
       name:        name.to_s,
       icon:        icon.to_s,
       author_link: link.to_s,
       title_link:  result["html_url"].to_s,
-      body:        result["body"].to_s,
+      body:        body,
     }
   end
 
