@@ -39,9 +39,9 @@ class Usecase
       slack.send_post post
     end
 
-    if notices.size != 0
-      github.notification_to_read
-    end
+    # if notices.size != 0
+    #   github.notification_to_read
+    # end
   end
 
   def error(err)
@@ -83,14 +83,13 @@ class Usecase
   end
 
   private def decision_reason(reason : String) : String
-    mention = ""
-    if reason == "assign" ||
-       reason == "author" ||
-       reason == "comment" ||
-       reason == "invitation"
-      mention = "<@#{ENV["SLACK_ID"]}> "
-    end
-
-    return mention
+    [
+      "assign",
+      "author",
+      "comment",
+      "invitation",
+      "mention",
+      "team_mention",
+    ].includes?(reason) ? "<@#{ENV["SLACK_ID"]}> " : ""
   end
 end
