@@ -39,9 +39,9 @@ class Usecase
       slack.send_post post
     end
 
-    # if notices.size != 0
-    #   github.notification_to_read
-    # end
+    if notices.size != 0
+      github.notification_to_read
+    end
   end
 
   def error(err)
