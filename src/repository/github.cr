@@ -1,5 +1,6 @@
 require "uri"
 require "http/client"
+require "../models"
 
 class Github
   def initialize(@username : String, @token : String)
@@ -10,8 +11,8 @@ class Github
   end
 
   def get_notifications
-    # res = @github.get "/notifications?all=true&since=2019-07-10T23:39:01Z"
-    res = @github.get "/notifications"
+    res = @github.get "/notifications?all=true&since=2019-07-10T23:39:01Z"
+    # res = @github.get "/notifications"
 
     result = JSON.parse(res.body).as_a
 
@@ -30,45 +31,18 @@ class Github
 
   def get_comment(url : String)
     res = @github.get url
+    result = GithubComment.from_json(res.body)
 
-    begin
-      result = JSON.parse(res.body)
-    rescue err
-      return {
-        name:        "",
-        icon:        "",
-        author_link: "",
-        title_link:  "",
-        body:        "",
-      }
-    end
-
-    begin
-      name = result["user"]["login"]
-      icon = result["user"]["avatar_url"]
-      link = result["user"]["html_url"]
-    rescue err
-      name = ""
-      icon = ""
-      link = ""
-    end
-
-    begin
-      body = result["body"].to_s
-    rescue err
-      body = nil
-    end
-
-    return {
-      name:        name.to_s,
-      icon:        icon.to_s,
-      author_link: link.to_s,
-      title_link:  result["html_url"].to_s,
-      body:        body,
+    {
+      name:        result.user.login,
+      icon:        result.user.avatar_url,
+      author_link: result.user.html_url,
+      title_link:  result.html_url,
+      body:        result.body,
     }
   end
 
   def notification_to_read
-    res = @github.put "/notifications"
+    # res = @github.put "/notifications"
   end
 end
