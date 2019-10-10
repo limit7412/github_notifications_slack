@@ -14,18 +14,19 @@ class Github
     res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
     # res = @github.get "/notifications"
 
-    result = JSON.parse(res.body).as_a
+    # result = JSON.parse(res.body).as_a
+    result = Array(GithubNotifications).from_json res.body
 
     return result.map { |line| {
-      type:             line["subject"]["type"].to_s,
-      reason:           line["reason"].to_s,
-      repository_name:  line["repository"]["full_name"].to_s,
-      title:            line["subject"]["title"].to_s,
-      title_link:       line["repository"]["html_url"].to_s,
-      avatar:           line["repository"]["owner"]["avatar_url"].to_s,
-      comment_url:      line["subject"]["url"].to_s,
-      latest_url:       line["subject"]["latest_comment_url"].to_s,
-      subscription_url: line["subscription_url"].to_s,
+      type:             line.subject.type,
+      reason:           line.reason,
+      repository_name:  line.repository.full_name,
+      title:            line.subject.title,
+      title_link:       line.repository.html_url,
+      avatar:           line.repository.owner.avatar_url,
+      comment_url:      line.subject.url,
+      latest_url:       line.subject.latest_comment_url,
+      subscription_url: line.subscription_url,
     } }
   end
 

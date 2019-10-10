@@ -14,11 +14,7 @@ class Usecase
       type = decision_type line[:type]
       mention = decision_reason line[:reason]
 
-      if line["latest_url"].blank?
-        comment = github.get_comment line[:comment_url]
-      else
-        comment = github.get_comment line[:latest_url]
-      end
+      comment = github.get_comment !line["latest_url"].blank? ? line[:latest_url] : line[:comment_url]
 
       slack = Slack.new type[:webhook]
 
@@ -32,7 +28,7 @@ class Usecase
         title:       line[:title],
         title_link:  comment[:title_link],
         text:        comment[:body],
-        footer:      !line[:repository_name].blank? ? line[:repository_name] : "github",
+        footer:      !line[:repository_name].nil? ? line[:repository_name] : "github",
         footer_icon: line[:avatar],
       }
 
