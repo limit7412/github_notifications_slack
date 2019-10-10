@@ -11,7 +11,7 @@ class Github
   end
 
   def get_notifications
-    res = @github.get "/notifications?all=true&since=2019-07-10T23:39:01Z"
+    res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
     # res = @github.get "/notifications"
 
     result = JSON.parse(res.body).as_a
@@ -31,15 +31,25 @@ class Github
 
   def get_comment(url : String)
     res = @github.get url
-    result = GithubComment.from_json(res.body)
+    if res.status.ok?
+      result = GithubComment.from_json(res.body)
 
-    {
-      name:        result.user.login,
-      icon:        result.user.avatar_url,
-      author_link: result.user.html_url,
-      title_link:  result.html_url,
-      body:        result.body,
-    }
+      {
+        name:        result.user.login,
+        icon:        result.user.avatar_url,
+        author_link: result.user.html_url,
+        title_link:  result.html_url,
+        body:        result.body,
+      }
+    else
+      {
+        name:        "",
+        icon:        "",
+        author_link: "",
+        title_link:  "",
+        body:        "",
+      }
+    end
   end
 
   def notification_to_read

@@ -2,11 +2,8 @@ require "json"
 
 class GithubComment
   JSON.mapping(
-    user: {
-      type:    GithubUser,
-      nilable: true,
-    },
-    title_link: {
+    user: GithubUser,
+    html_url: {
       type:    String,
       nilable: true,
     },
