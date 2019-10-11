@@ -14,7 +14,6 @@ class Github
     res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
     # res = @github.get "/notifications"
 
-    # result = JSON.parse(res.body).as_a
     result = Array(GithubNotifications).from_json res.body
 
     return result.map { |line| {
@@ -30,26 +29,15 @@ class Github
     } }
   end
 
-  def get_comment(url : String)
+  def get_comment(url : String) : GithubComment
     res = @github.get url
-    if res.status.ok?
-      result = GithubComment.from_json(res.body)
 
-      {
-        name:        result.user.login,
-        icon:        result.user.avatar_url,
-        author_link: result.user.html_url,
-        title_link:  result.html_url,
-        body:        result.body,
-      }
+    if res.status.ok?
+      GithubComment.from_json res.body
     else
-      {
-        name:        "",
-        icon:        "",
-        author_link: "",
-        title_link:  "",
-        body:        "",
-      }
+      GithubComment.from_json %({
+        "user": {}
+      })
     end
   end
 

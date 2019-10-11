@@ -1,5 +1,6 @@
 require "./repository/slack.cr"
 require "./repository/github.cr"
+require "./models"
 
 class Usecase
   def initialize
@@ -20,14 +21,14 @@ class Usecase
 
       post = {
         fallback:    type[:subject],
-        author_name: comment[:name],
-        author_icon: comment[:icon],
-        author_link: comment[:author_link],
+        author_name: comment.user.login,
+        author_icon: comment.user.avatar_url,
+        author_link: comment.user.html_url,
         pretext:     "#{mention}#{type[:subject]}",
         color:       type[:color],
         title:       line[:title],
-        title_link:  comment[:title_link],
-        text:        comment[:body],
+        title_link:  comment.html_url,
+        text:        comment.body,
         footer:      !line[:repository_name].nil? ? line[:repository_name] : "github",
         footer_icon: line[:avatar],
       }
