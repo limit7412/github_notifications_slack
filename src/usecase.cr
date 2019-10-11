@@ -1,5 +1,6 @@
 require "./repository/slack.cr"
 require "./repository/github.cr"
+require "./models"
 
 class Usecase
   def initialize
@@ -11,29 +12,24 @@ class Usecase
     notices = github.get_notifications
 
     notices.each do |line|
-      type = decision_type line[:type]
-      mention = decision_reason line[:reason]
-
-      if line["latest_url"].blank?
-        comment = github.get_comment line[:comment_url]
-      else
-        comment = github.get_comment line[:latest_url]
-      end
+      type = decision_type line.subject.type
+      mention = decision_reason line.reason
+      comment = github.get_comment line.subject
 
       slack = Slack.new type[:webhook]
 
       post = {
         fallback:    type[:subject],
-        author_name: comment[:name],
-        author_icon: comment[:icon],
-        author_link: comment[:author_link],
+        author_name: comment.user.login,
+        author_icon: comment.user.avatar_url,
+        author_link: comment.user.html_url,
         pretext:     "#{mention}#{type[:subject]}",
         color:       type[:color],
-        title:       line[:title],
-        title_link:  comment[:title_link],
-        text:        comment[:body],
-        footer:      !line[:repository_name].blank? ? line[:repository_name] : "github",
-        footer_icon: line[:avatar],
+        title:       line.subject.title,
+        title_link:  comment.html_url,
+        text:        comment.body,
+        footer:      !line.repository.full_name.nil? ? line.repository.full_name : "github",
+        footer_icon: line.repository.owner.avatar_url,
       }
 
       slack.send_post post
@@ -61,25 +57,26 @@ class Usecase
   end
 
   private def decision_type(type : String)
-    if type == "PullRequest"
-      subject = "プルリクエストみたいです！ 一緒にレビューがんばりましょう！"
-      webhook = ENV["WEBHOOK_URL_UDUKI"]
-      color = "#F6CEE3"
-    elsif type == "Issue"
-      subject = "イシューみたい 確認してみよっか"
-      webhook = ENV["WEBHOOK_URL_RIN"]
-      color = "#A9D0F5"
+    case type
+    when "PullRequest"
+      {
+        subject: "プルリクエストみたいです！ 一緒にレビューがんばりましょう！",
+        webhook: ENV["WEBHOOK_URL_UDUKI"],
+        color:   "#F6CEE3",
+      }
+    when "Issue"
+      {
+        subject: "イシューみたい 確認してみよっか",
+        webhook: ENV["WEBHOOK_URL_RIN"],
+        color:   "#A9D0F5",
+      }
     else
-      subject = "なにかあったみたい #{type}だって"
-      webhook = ENV["WEBHOOK_URL_RIN"]
-      color = "#D8D8D8"
+      {
+        subject: "なにかあったみたい #{type}だって",
+        webhook: ENV["WEBHOOK_URL_RIN"],
+        color:   "#D8D8D8",
+      }
     end
-
-    return {
-      subject: subject,
-      webhook: webhook,
-      color:   color,
-    }
   end
 
   private def decision_reason(reason : String) : String
