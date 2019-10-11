@@ -10,7 +10,7 @@ class Github
     @github.basic_auth @username, @token
   end
 
-  def get_notifications
+  def get_notifications : Array(GithubNotifications)
     # res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
     res = @github.get "/notifications"
 
@@ -32,6 +32,6 @@ class Github
   end
 
   def notification_to_read
-    res = @github.put "/notifications"
+    @github.put "/notifications"
   end
 end
