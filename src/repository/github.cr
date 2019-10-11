@@ -11,8 +11,8 @@ class Github
   end
 
   def get_notifications
-    res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
-    # res = @github.get "/notifications"
+    # res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
+    res = @github.get "/notifications"
 
     return Array(GithubNotifications).from_json res.body
   end
@@ -32,6 +32,6 @@ class Github
   end
 
   def notification_to_read
-    # res = @github.put "/notifications"
+    res = @github.put "/notifications"
   end
 end
