@@ -12,10 +12,9 @@ class Usecase
     notices = github.get_notifications
 
     notices.each do |line|
-      type = decision_type line[:type]
-      mention = decision_reason line[:reason]
-
-      comment = github.get_comment !line["latest_url"].blank? ? line[:latest_url] : line[:comment_url]
+      type = decision_type line.subject.type
+      mention = decision_reason line.reason
+      comment = github.get_comment line.subject
 
       slack = Slack.new type[:webhook]
 
@@ -26,11 +25,11 @@ class Usecase
         author_link: comment.user.html_url,
         pretext:     "#{mention}#{type[:subject]}",
         color:       type[:color],
-        title:       line[:title],
+        title:       line.subject.title,
         title_link:  comment.html_url,
         text:        comment.body,
-        footer:      !line[:repository_name].nil? ? line[:repository_name] : "github",
-        footer_icon: line[:avatar],
+        footer:      !line.repository.full_name.nil? ? line.repository.full_name : "github",
+        footer_icon: line.repository.owner.avatar_url,
       }
 
       slack.send_post post
