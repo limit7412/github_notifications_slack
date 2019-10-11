@@ -57,25 +57,26 @@ class Usecase
   end
 
   private def decision_type(type : String)
-    if type == "PullRequest"
-      subject = "プルリクエストみたいです！ 一緒にレビューがんばりましょう！"
-      webhook = ENV["WEBHOOK_URL_UDUKI"]
-      color = "#F6CEE3"
-    elsif type == "Issue"
-      subject = "イシューみたい 確認してみよっか"
-      webhook = ENV["WEBHOOK_URL_RIN"]
-      color = "#A9D0F5"
+    case type
+    when "PullRequest"
+      {
+        subject: "プルリクエストみたいです！ 一緒にレビューがんばりましょう！",
+        webhook: ENV["WEBHOOK_URL_UDUKI"],
+        color:   "#F6CEE3",
+      }
+    when "Issue"
+      {
+        subject: "イシューみたい 確認してみよっか",
+        webhook: ENV["WEBHOOK_URL_RIN"],
+        color:   "#A9D0F5",
+      }
     else
-      subject = "なにかあったみたい #{type}だって"
-      webhook = ENV["WEBHOOK_URL_RIN"]
-      color = "#D8D8D8"
+      {
+        subject: "なにかあったみたい #{type}だって",
+        webhook: ENV["WEBHOOK_URL_RIN"],
+        color:   "#D8D8D8",
+      }
     end
-
-    return {
-      subject: subject,
-      webhook: webhook,
-      color:   color,
-    }
   end
 
   private def decision_reason(reason : String) : String
