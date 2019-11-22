@@ -1,0 +1,27 @@
+service: github-notifications-slack
+
+custom:
+  defaultStage: dev
+  api_version: v0
+
+provider:
+  name: aws
+  runtime: provided
+  timeout: 300
+  region: ap-northeast-1
+  stage: ${opt:stage, self:custom.defaultStage}
+  # profile: qazx7412
+  environment:
+    ${file(./env.yml)}
+
+functions:
+  github_notifications_slack:
+    handler: github_notifications_slack
+    events:
+      # スケジュールは5mまでの間隔でしか登録できない
+      # https://dev.classmethod.jp/cloud/aws/invoke-lambda-at-1-minute-interval/
+      - schedule: cron(*/5 * * * ? *)
+      - schedule: cron(1,6,11,16,21,26,31,36,41,46,51,56 * * * ? *)
+      - schedule: cron(2,7,12,17,22,27,32,37,42,47,52,57 * * * ? *)
+      - schedule: cron(3,8,13,18,23,28,33,38,43,48,53,58 * * * ? *)
+      - schedule: cron(4,9,14,19,24,29,34,39,44,49,54,59 * * * ? *)

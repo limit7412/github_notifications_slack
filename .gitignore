@@ -1,7 +1,10 @@
-/docs/
-/lib/
-/bin/
-/.shards/
-*.dwarf
+# package directories
+node_modules
+jspm_packages
 
-github_notifications_slack
+# Serverless directories
+.serverless
+
+bootstrap
+lib
+env.yml
