@@ -43,7 +43,7 @@ class Usecase
   end
 
   def error(err)
-    slack = Slack.new ENV["WEBHOOK_URL_IZUMI"]
+    slack = Slack.new ENV["ALERT_WEBHOOK_URL"]
 
     message = "エラーみたい…確認してみよっか"
     post = {
@@ -65,19 +65,19 @@ class Usecase
     when "PullRequest"
       {
         subject: "プルリクエストみたいです！ 一緒にレビューがんばりましょう！",
-        webhook: ENV["WEBHOOK_URL_UDUKI"],
+        webhook: ENV["PULL_REQUEST_WEBHOOK_URL"],
         color:   "#F6CEE3",
       }
     when "Issue"
       {
         subject: "イシューみたい 確認してみよっか",
-        webhook: ENV["WEBHOOK_URL_RIN"],
+        webhook: ENV["ISSUE_WEBHOOK_URL"],
         color:   "#A9D0F5",
       }
     else
       {
         subject: "なにかあったみたい #{type}だって",
-        webhook: ENV["WEBHOOK_URL_RIN"],
+        webhook: ENV["ISSUE_WEBHOOK_URL"],
         color:   "#D8D8D8",
       }
     end
