@@ -38,6 +38,8 @@ class Usecase
     if notices.size != 0
       github.notification_to_read
     end
+
+    {msg: "ok"}
   end
 
   def error(err)
@@ -54,6 +56,8 @@ class Usecase
     }
 
     slack.send_post post
+
+    {msg: "ng"}
   end
 
   private def decision_type(type : String)

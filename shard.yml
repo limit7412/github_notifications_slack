@@ -11,9 +11,3 @@ targets:
 crystal: 0.28.0
 
 license: MIT
-
-dependencies:
-  clim:
-    github: at-grandpa/clim
-    version: 0.4.1
-
