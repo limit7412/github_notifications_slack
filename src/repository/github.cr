@@ -21,12 +21,12 @@ class Github
     url = !subject.latest_comment_url.blank? ? subject.latest_comment_url : subject.url
     res = @github.get url
 
-    if res.status.ok?
+    begin
       GithubComment.from_json res.body
-    else
+    rescue
       GithubComment.from_json %({
         "user": {},
-        "body": "no comment data"
+        "body": "faild parse comment data"
       })
     end
   end
