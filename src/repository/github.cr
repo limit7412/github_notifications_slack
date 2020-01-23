@@ -24,9 +24,10 @@ class Github
     res = @github.get url
 
     begin
-      GithubComment.from_json res.body
       Lambda.print_log "comment body: #{res.body}"
+      GithubComment.from_json res.body
     rescue
+      Lambda.print_log "faild parse comment data"
       GithubComment.from_json %({
         "user": {},
         "body": "faild parse comment data"
