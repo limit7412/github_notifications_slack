@@ -30,4 +30,9 @@ module Lambda
       HTTP::Client.post url, headers: header, body: body.to_json
     end
   end
+
+  def print_log(log : String)
+    puts `echo '#{log}'`
+    STDOUT.flush
+  end
 end

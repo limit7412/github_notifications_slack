@@ -1,6 +1,7 @@
 require "uri"
 require "http/client"
 require "../models"
+require "../handler"
 
 class Github
   def initialize(@username : String, @token : String)
@@ -13,6 +14,7 @@ class Github
   def get_notifications : Array(GithubNotifications)
     # res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
     res = @github.get "/notifications"
+    Lambda.print_log "notifications body: #{res.body}"
 
     return Array(GithubNotifications).from_json res.body
   end
@@ -22,8 +24,10 @@ class Github
     res = @github.get url
 
     begin
+      Lambda.print_log "comment body: #{res.body}"
       GithubComment.from_json res.body
     rescue
+      Lambda.print_log "faild parse comment data"
       GithubComment.from_json %({
         "user": {},
         "body": "faild parse comment data"
