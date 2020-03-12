@@ -64,15 +64,21 @@ class Usecase
     case type
     when "PullRequest"
       {
-        subject: "[#{type}] 更新があったみたいです！ 一緒にレビューがんばりましょう！",
+        subject: "プルリクエストに更新があったみたいです！ 一緒にレビューがんばりましょう！",
         webhook: ENV["PULL_REQUEST_WEBHOOK_URL"],
         color:   "#F6CEE3",
       }
-    when "Issue", "Commit"
+    when "Issue"
       {
-        subject: "[#{type}] 更新があったみたい。確認してみよっか",
+        subject: "イシューに更新があったみたい。確認してみよっか",
         webhook: ENV["ISSUE_WEBHOOK_URL"],
         color:   "#A9D0F5",
+      }
+    when "Commit"
+      {
+        subject: "コミットで更新があったみたい。確認してみよっか",
+        webhook: ENV["ISSUE_WEBHOOK_URL"],
+        color:   "#f5d7a9",
       }
     else
       {
