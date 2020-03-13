@@ -76,8 +76,8 @@ class Usecase
       }
     when "Commit"
       {
-        subject: "コミットで更新があったみたい。確認してみよっか",
-        webhook: ENV["ISSUE_WEBHOOK_URL"],
+        subject: "コミットになにか更新があったみたいだよ！一緒に確認してみようよ！",
+        webhook: ENV["COMMIT_WEBHOOK_URL"],
         color:   "#f5d7a9",
       }
     else
