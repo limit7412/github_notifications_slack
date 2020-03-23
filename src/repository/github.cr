@@ -4,11 +4,13 @@ require "../models"
 require "../handler"
 
 class Github
-  def initialize(@username : String, @token : String)
+  def initialize(@token : String)
     uri = URI.parse "https://api.github.com"
     @github = HTTP::Client.new uri
 
-    @github.basic_auth @username, @token
+    @github.before_request do |request|
+      request.headers["Authorization"] = "token #{@token}"
+    end
   end
 
   def get_notifications : Array(GithubNotifications)
