@@ -7,7 +7,7 @@ class Usecase
   end
 
   def check_notifications
-    github = Github.new ENV["GITHUB_USER_NAME"], ENV["GITHUB_TOKEN"]
+    github = Github.new ENV["GITHUB_TOKEN"]
 
     notices = github.get_notifications
 
