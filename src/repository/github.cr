@@ -23,6 +23,7 @@ class Github
 
   def get_comment(subject : GithubSubject) : GithubComment
     url = !subject.latest_comment_url.blank? ? subject.latest_comment_url : subject.url
+    Lambda.print_log "comment url: #{url}"
     res = @github.get url
 
     begin
