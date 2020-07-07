@@ -1,0 +1,39 @@
+name: crystal-sls
+
+on:
+  push:
+    branches: [ develop, master ]
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: crystallang/crystal
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: shards install
+      run: shards install
+
+    - name: build
+      run: shards build --static && mv bin/* . && chmod +x bootstrap
+
+    - name: configure  aws credentials from Test account
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1
+
+    - name: get env
+      run: |
+        aws s3 cp s3://limit7412-codebuild-envfile/github_notifications_slack/dev/env.yml .
+
+    - name: deploy
+      uses: serverless/github-action@master
+      with:
+        args: deploy -s dev
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
