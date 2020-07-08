@@ -82,8 +82,8 @@ class Usecase
       }
     else
       {
-        subject: "[#{type}] なにかあったみたい…確認してみて",
-        webhook: ENV["ISSUE_WEBHOOK_URL"],
+        subject: "[#{type}] なにかあったみたいですよ。さっさと確認した方がいいんじゃないですか？",
+        webhook: ENV["OTHER_WEBHOOK_URL"],
         color:   "#D8D8D8",
       }
     end
@@ -98,6 +98,7 @@ class Usecase
       "mention",
       "team_mention",
       "review_requested",
+      "ci_activity",
     ].includes?(reason) ? "<@#{ENV["SLACK_ID"]}> " : ""
   end
 end
