@@ -24,7 +24,7 @@ class Github
   def get_comment(subject : GithubSubject) : GithubComment
     url = !subject.latest_comment_url.blank? ? subject.latest_comment_url : subject.url
     Lambda.print_log "comment url: #{url}"
-    if url
+    if url == ""
       comment = GithubComment.from_json %({
         "user": {},
         "body": "no comments exist"
