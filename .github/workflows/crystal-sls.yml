@@ -8,16 +8,10 @@ jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-latest
-#     container:
-#       image: crystallang/crystal
+    container:
+      image: crystallang/crystal
 
     steps:
-    
-    - name: set up
-      uses: MeilCli/setup-crystal-action@v3
-      with: 
-        crystal_version: 0.34.0
-        shards_version: 0.10.0
 
     - name: checkout
       uses: actions/checkout@v1
@@ -27,6 +21,9 @@ jobs:
 
     - name: build
       run: shards build --static && mv bin/* . && chmod +x bootstrap
+    
+    - name: install aws
+      run: apt install awscli
 
     - name: configure aws
       uses: aws-actions/configure-aws-credentials@v1
