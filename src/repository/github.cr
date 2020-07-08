@@ -14,7 +14,6 @@ class Github
   end
 
   def get_notifications : Array(GithubNotifications)
-    # res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
     res = @github.get "/notifications"
     Lambda.print_log "notifications body: #{res.body}"
 
@@ -24,6 +23,13 @@ class Github
   def get_comment(subject : GithubSubject) : GithubComment
     url = !subject.latest_comment_url.blank? ? subject.latest_comment_url : subject.url
     Lambda.print_log "comment url: #{url}"
+    if url.blank?
+      return GithubComment.from_json %({
+        "user": {},
+        "body": "no comments exist"
+      })
+    end
+
     res = @github.get url
 
     begin

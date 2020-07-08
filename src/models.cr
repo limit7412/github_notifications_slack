@@ -13,7 +13,11 @@ class GithubSubject
   JSON.mapping(
     type: String,
     title: String?,
-    url: String,
+    url: {
+      type:    String,
+      nilable: false,
+      default: "",
+    },
     latest_comment_url: {
       type:    String,
       nilable: false,
