@@ -8,10 +8,13 @@ jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-latest
-    container:
-      image: crystallang/crystal
+#     container:
+#       image: crystallang/crystal
 
     steps:
+    
+    - name: set up
+      uses: MeilCli/setup-crystal-action@v3
 
     - name: checkout
       uses: actions/checkout@v1
@@ -22,7 +25,7 @@ jobs:
     - name: build
       run: shards build --static && mv bin/* . && chmod +x bootstrap
 
-    - name: configure  aws credentials from Test account
+    - name: configure aws
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
