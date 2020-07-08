@@ -15,6 +15,9 @@ jobs:
     
     - name: set up
       uses: MeilCli/setup-crystal-action@v3
+      with: 
+        crystal_version: 0.34.0
+        shards_version: 0.10.0
 
     - name: checkout
       uses: actions/checkout@v1
