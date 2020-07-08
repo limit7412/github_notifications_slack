@@ -14,7 +14,6 @@ class Github
   end
 
   def get_notifications : Array(GithubNotifications)
-    # res = @github.get "/notifications?all=true&since=2019-09-07T23:39:01Z"
     res = @github.get "/notifications"
     Lambda.print_log "notifications body: #{res.body}"
 
