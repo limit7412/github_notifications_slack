@@ -21,7 +21,7 @@ jobs:
 
     - name: build
       run: shards build --static && mv bin/* . && chmod +x bootstrap
-    
+
     - name: install aws
       run: apt-get -y update && apt-get -y install awscli
 
@@ -34,7 +34,7 @@ jobs:
 
     - name: get env
       run: |
-        aws s3 cp s3://limit7412-codebuild-envfile/github_notifications_slack/dev/env.yml .
+        aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/dev/env.yml .
 
     - name: deploy
       uses: serverless/github-action@master
