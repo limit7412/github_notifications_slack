@@ -16,7 +16,7 @@ class GithubSubject
     url: String?,
     latest_comment_url: {
       type:    String,
-      nilable: true,
+      nilable: false,
       default: "",
     },
   )
