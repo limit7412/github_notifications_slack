@@ -23,7 +23,7 @@ jobs:
       run: shards build --static && mv bin/* . && chmod +x bootstrap
     
     - name: install aws
-      run: apt-get update && apt-get install awscli
+      run: apt-get -y update && apt-get -y install awscli
 
     - name: configure aws
       uses: aws-actions/configure-aws-credentials@v1
