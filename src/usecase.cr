@@ -98,7 +98,6 @@ class Usecase
       "mention",
       "team_mention",
       "review_requested",
-      "ci_activity",
     ].includes?(reason) ? "<@#{ENV["SLACK_ID"]}> " : ""
   end
 end
