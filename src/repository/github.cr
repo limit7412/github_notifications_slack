@@ -15,9 +15,14 @@ class Github
 
   def get_notifications : Array(GithubNotifications)
     res = @github.get "/notifications"
+    if res.status_code >= 500
+      Lambda.print_log "return server error from api"
+      return Array(GithubNotifications).new
+    end
+
     Lambda.print_log "notifications body: #{res.body}"
 
-    return Array(GithubNotifications).from_json res.body
+    Array(GithubNotifications).from_json res.body
   end
 
   def get_comment(subject : GithubSubject) : GithubComment
@@ -31,6 +36,13 @@ class Github
     end
 
     res = @github.get url
+    if res.status_code >= 500
+      Lambda.print_log "return server error from api"
+      return GithubComment.from_json %({
+        "user": {},
+        "body": "faild parse comment data"
+      })
+    end
 
     begin
       Lambda.print_log "comment body: #{res.body}"
