@@ -16,7 +16,7 @@ class Usecase
       mention = decision_reason line.reason
       comment = github.get_comment line.subject
 
-      slack = Slack.new type[:webhook]
+      slack = Slack.new ENV["WEBHOOK_URL"]
 
       post = {
         fallback:    type[:subject],
@@ -52,7 +52,7 @@ class Usecase
       title:    err.message,
       text:     err.backtrace.join('\n'),
       color:    "#EB4646",
-      footer:   "github_notifications_slack by #{ENV["MYNAME"]? ? ENV["MYNAME"] : "unknown"}",
+      footer:   "github_notifications_slack (#{ENV["ENV"]})",
     }
 
     slack.send_post post
@@ -61,32 +61,24 @@ class Usecase
   end
 
   private def decision_type(type : String)
+    subject = "[#{type}] 更新があったみたいです。 確認してみましょう！"
+    color = "#D8D8D8"
+
     case type
     when "PullRequest"
-      {
-        subject: "プルリクエストに更新があったみたいです！ 一緒にレビューがんばりましょう！",
-        webhook: ENV["PULL_REQUEST_WEBHOOK_URL"],
-        color:   "#F6CEE3",
-      }
+      color = "#F6CEE3"
     when "Issue"
-      {
-        subject: "イシューに更新があったみたい。確認してみよっか",
-        webhook: ENV["ISSUE_WEBHOOK_URL"],
-        color:   "#A9D0F5",
-      }
+      color = "#A9D0F5"
     when "Commit"
-      {
-        subject: "コミットになにか更新があったみたいだよ！一緒に確認してみようよ！",
-        webhook: ENV["COMMIT_WEBHOOK_URL"],
-        color:   "#f5d7a9",
-      }
+      color = "#f5d7a9"
     else
-      {
-        subject: "[#{type}] なにかあったみたいですよ。さっさと確認した方がいいんじゃないですか？",
-        webhook: ENV["OTHER_WEBHOOK_URL"],
-        color:   "#D8D8D8",
-      }
+      subject = "[#{type}] なにかあったみたいです。 確認してみましょう！"
     end
+
+    {
+      subject: subject,
+      color:   color,
+    }
   end
 
   private def decision_reason(reason : String) : String

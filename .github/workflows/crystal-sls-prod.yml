@@ -2,7 +2,7 @@ name: crystal-sls
 
 on:
   push:
-    branches: [ develop, master ]
+    branches: [ master ]
 
 jobs:
   deploy:
@@ -34,12 +34,12 @@ jobs:
 
     - name: get env
       run: |
-        aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/dev/env.yml .
+        aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/prod/env.yml .
 
     - name: deploy
       uses: serverless/github-action@master
       with:
-        args: deploy -s dev
+        args: deploy -s prod
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
