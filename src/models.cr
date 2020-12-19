@@ -1,51 +1,47 @@
 require "json"
 
 class GithubNotifications
-  JSON.mapping(
-    subject: GithubSubject,
-    reason: String,
-    repository: GithubRepository,
-    subscription_url: String?,
-  )
+  include JSON::Serializable
+
+  property subject : GithubSubject
+  property reason : String
+  property repository : GithubRepository
+  property subscription_url : String?
 end
 
 class GithubSubject
-  JSON.mapping(
-    type: String,
-    title: String?,
-    url: {
-      type:    String,
-      nilable: false,
-      default: "",
-    },
-    latest_comment_url: {
-      type:    String,
-      nilable: false,
-      default: "",
-    },
-  )
+  include JSON::Serializable
+
+  property type : String
+  property title : String?
+
+  @[JSON::Field(emit_null: false)]
+  property url : String = ""
+
+  @[JSON::Field(emit_null: false)]
+  property latest_comment_url : String = ""
 end
 
 class GithubRepository
-  JSON.mapping(
-    full_name: String?,
-    html_url: String?,
-    owner: GithubUser,
-  )
+  include JSON::Serializable
+
+  property full_name : String?
+  property html_url : String?
+  property owner : GithubUser
 end
 
 class GithubComment
-  JSON.mapping(
-    user: GithubUser,
-    html_url: String?,
-    body: String?,
-  )
+  include JSON::Serializable
+
+  property user : GithubUser
+  property html_url : String?
+  property body : String?
 end
 
 class GithubUser
-  JSON.mapping(
-    login: String?,
-    avatar_url: String?,
-    html_url: String?,
-  )
+  include JSON::Serializable
+
+  property login : String?
+  property avatar_url : String?
+  property html_url : String?
 end
