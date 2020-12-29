@@ -17,7 +17,7 @@ class GithubNotifications
       "mention",
       "team_mention",
       "review_requested",
-    ].includes?(self.reason)
+    ].includes?(reason)
   end
 end
 
@@ -34,10 +34,10 @@ class GithubSubject
   property latest_comment_url : String = ""
 
   private def decision_type
-    comment = "[#{self.type}] 更新があったみたいです。 確認してみましょう！"
+    pretext = "[#{type}] 更新があったみたいです。 確認してみましょう！"
     color = "#D8D8D8"
 
-    case this.type
+    case type
     when "PullRequest"
       color = "#F6CEE3"
     when "Issue"
@@ -45,21 +45,21 @@ class GithubSubject
     when "Commit"
       color = "#f5d7a9"
     else
-      subject = "[#{self.type}] なにかあったみたいです。 確認してみましょう！"
+      pretext = "[#{type}] なにかあったみたいです。 確認してみましょう！"
     end
 
     {
-      comment: comment,
+      pretext: pretext,
       color:   color,
     }
   end
 
-  def comment : String
-    self.decision_type.comment
+  def pretext : String
+    decision_type[:pretext]
   end
 
   def color : String
-    self.decision_type.color
+    decision_type[:color]
   end
 end
 

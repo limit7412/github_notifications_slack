@@ -1,7 +1,7 @@
 require "uri"
 require "http/client"
-require "../models/github"
-require "../handler"
+require "./models"
+require "../runtime/lambda"
 
 class Github
   def initialize(@token : String)
