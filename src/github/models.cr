@@ -7,6 +7,18 @@ class GithubNotifications
   property reason : String
   property repository : GithubRepository
   property subscription_url : String?
+
+  def mention? : Bool
+    [
+      "assign",
+      "author",
+      "comment",
+      "invitation",
+      "mention",
+      "team_mention",
+      "review_requested",
+    ].includes?(reason)
+  end
 end
 
 class GithubSubject
@@ -20,6 +32,35 @@ class GithubSubject
 
   @[JSON::Field(emit_null: false)]
   property latest_comment_url : String = ""
+
+  private def decision_type
+    pretext = "[#{type}] 更新があったみたいです。 確認してみましょう！"
+    color = "#D8D8D8"
+
+    case type
+    when "PullRequest"
+      color = "#F6CEE3"
+    when "Issue"
+      color = "#A9D0F5"
+    when "Commit"
+      color = "#f5d7a9"
+    else
+      pretext = "[#{type}] なにかあったみたいです。 確認してみましょう！"
+    end
+
+    {
+      pretext: pretext,
+      color:   color,
+    }
+  end
+
+  def pretext : String
+    decision_type[:pretext]
+  end
+
+  def color : String
+    decision_type[:color]
+  end
 end
 
 class GithubRepository

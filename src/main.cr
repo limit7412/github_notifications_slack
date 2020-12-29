@@ -1,4 +1,4 @@
-require "./handler"
+require "./runtime/lambda"
 require "./usecase"
 
 Lambda.handler "github_notifications_slack" do |event|
