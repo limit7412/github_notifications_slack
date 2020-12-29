@@ -1,6 +1,6 @@
 require "uri"
 require "http/client"
-require "../models"
+require "../models/github"
 require "../handler"
 
 class Github
