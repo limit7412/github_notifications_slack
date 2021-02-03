@@ -16,7 +16,7 @@ provider:
 
 functions:
   github_notifications_slack:
-    image: ${opt:account, self:custom.defaultAccount}.dkr.ecr.${self:provider.region}.amazonaws.com/github_notifications_slack_${self:provider.stage}@${opt:digest, self:custom.defaultDigest}
+    handler: github_notifications_slack
     events:
       # スケジュールは5mまでの間隔でしか登録できない
       # https://dev.classmethod.jp/cloud/aws/invoke-lambda-at-1-minute-interval/
