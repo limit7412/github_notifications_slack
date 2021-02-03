@@ -39,6 +39,4 @@ jobs:
         docker cp $REPOSITORY:/work/bootstrap .
 
     - name: deploy
-      env:
-        ACCOUNT_ID: ${{ steps.get-aws-account.outputs.ACCOUNT_ID }}
       run: sls deploy --stage prod
