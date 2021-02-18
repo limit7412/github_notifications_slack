@@ -7,6 +7,7 @@ class GithubNotifications
   property reason : String
   property repository : GithubRepository
   property subscription_url : String?
+  property comment : GithubComment
 
   def mention? : Bool
     [
@@ -33,33 +34,39 @@ class GithubSubject
   @[JSON::Field(emit_null: false)]
   property latest_comment_url : String = ""
 
-  private def decision_type
-    pretext = "[#{type}] 更新があったみたいです。 確認してみましょう！"
-    color = "#D8D8D8"
-
-    case type
-    when "PullRequest"
-      color = "#F6CEE3"
-    when "Issue"
-      color = "#A9D0F5"
-    when "Commit"
-      color = "#f5d7a9"
-    else
-      pretext = "[#{type}] なにかあったみたいです。 確認してみましょう！"
-    end
-
-    {
-      pretext: pretext,
-      color:   color,
-    }
+  module Type
+    PullRequest = "PullRequest"
+    Issue       = "Issue"
+    Commit      = "Commit"
   end
 
-  def pretext : String
-    decision_type[:pretext]
+  def update? : Bool
+    [
+      Type::PullRequest,
+      Type::Issue,
+      Type::Commit,
+    ].includes?(type)
   end
 
   def color : String
-    decision_type[:color]
+    case type
+    when Type::PullRequest
+      "#F6CEE3"
+    when Type::Issue
+      "#A9D0F5"
+    when Type::Commit
+      "#f5d7a9"
+    else
+      "#D8D8D8"
+    end
+  end
+
+  def comment_url : String
+    if !latest_comment_url.blank?
+      latest_comment_url
+    else
+      url
+    end
   end
 end
 

@@ -17,19 +17,23 @@ class Github
     res = @github.get "/notifications"
     if res.status_code >= 500
       Lambda.print_log "return server error from api"
-      return Array(GithubNotifications).new
+      Array(GithubNotifications).new
     end
 
     Lambda.print_log "notifications body: #{res.body}"
 
-    Array(GithubNotifications).from_json res.body
+    Array(GithubNotifications)
+      .from_json(res.body)
+      .map do |item|
+        item.comment = get_comment item.subject.comment_url
+        item
+      end
   end
 
-  def get_comment(subject : GithubSubject) : GithubComment
-    url = !subject.latest_comment_url.blank? ? subject.latest_comment_url : subject.url
+  private def get_comment(url : String) : GithubComment
     Lambda.print_log "comment url: #{url}"
     if url.blank?
-      return GithubComment.from_json %({
+      GithubComment.from_json %({
         "user": {},
         "body": "no comments exist"
       })
@@ -38,9 +42,9 @@ class Github
     res = @github.get url
     if res.status_code >= 500
       Lambda.print_log "return server error from api"
-      return GithubComment.from_json %({
+      GithubComment.from_json %({
         "user": {},
-        "body": "faild parse comment data"
+        "body": "github api retrun server error"
       })
     end
 
