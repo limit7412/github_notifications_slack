@@ -1,88 +1,97 @@
 require "json"
 
-class GithubNotifications
-  include JSON::Serializable
+module Github
+  class Notifications
+    include JSON::Serializable
 
-  property subject : GithubSubject
-  property reason : String
-  property repository : GithubRepository
-  property subscription_url : String?
+    property subject : Subject
+    property reason : String
+    property repository : Repository
+    property subscription_url : String?
+    property comment : Comment
 
-  def mention? : Bool
-    [
-      "assign",
-      "author",
-      "comment",
-      "invitation",
-      "mention",
-      "team_mention",
-      "review_requested",
-    ].includes?(reason)
+    def mention? : Bool
+      [
+        "assign",
+        "author",
+        "comment",
+        "invitation",
+        "mention",
+        "team_mention",
+        "review_requested",
+      ].includes?(reason)
+    end
   end
-end
 
-class GithubSubject
-  include JSON::Serializable
+  class Subject
+    include JSON::Serializable
 
-  property type : String
-  property title : String?
+    property type : String
+    property title : String?
 
-  @[JSON::Field(emit_null: false)]
-  property url : String = ""
+    @[JSON::Field(emit_null: false)]
+    property url : String = ""
 
-  @[JSON::Field(emit_null: false)]
-  property latest_comment_url : String = ""
+    @[JSON::Field(emit_null: false)]
+    property latest_comment_url : String = ""
 
-  private def decision_type
-    pretext = "[#{type}] 更新があったみたいです。 確認してみましょう！"
-    color = "#D8D8D8"
-
-    case type
-    when "PullRequest"
-      color = "#F6CEE3"
-    when "Issue"
-      color = "#A9D0F5"
-    when "Commit"
-      color = "#f5d7a9"
-    else
-      pretext = "[#{type}] なにかあったみたいです。 確認してみましょう！"
+    module Type
+      PullRequest = "PullRequest"
+      Issue       = "Issue"
+      Commit      = "Commit"
     end
 
-    {
-      pretext: pretext,
-      color:   color,
-    }
+    def update? : Bool
+      [
+        Type::PullRequest,
+        Type::Issue,
+        Type::Commit,
+      ].includes?(type)
+    end
+
+    def color : String
+      case type
+      when Type::PullRequest
+        "#F6CEE3"
+      when Type::Issue
+        "#A9D0F5"
+      when Type::Commit
+        "#f5d7a9"
+      else
+        "#D8D8D8"
+      end
+    end
+
+    def comment_url : String
+      if !latest_comment_url.blank?
+        latest_comment_url
+      else
+        url
+      end
+    end
   end
 
-  def pretext : String
-    decision_type[:pretext]
+  class Repository
+    include JSON::Serializable
+
+    property full_name : String?
+    property html_url : String?
+    property owner : User
   end
 
-  def color : String
-    decision_type[:color]
+  class Comment
+    include JSON::Serializable
+
+    property user : User
+    property html_url : String?
+    property body : String?
   end
-end
 
-class GithubRepository
-  include JSON::Serializable
+  class User
+    include JSON::Serializable
 
-  property full_name : String?
-  property html_url : String?
-  property owner : GithubUser
-end
-
-class GithubComment
-  include JSON::Serializable
-
-  property user : GithubUser
-  property html_url : String?
-  property body : String?
-end
-
-class GithubUser
-  include JSON::Serializable
-
-  property login : String?
-  property avatar_url : String?
-  property html_url : String?
+    property login : String?
+    property avatar_url : String?
+    property html_url : String?
+  end
 end
