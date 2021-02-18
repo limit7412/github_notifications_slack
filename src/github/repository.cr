@@ -28,13 +28,13 @@ module Github
     def get_comment(url : String) : Comment
       Lambda.print_log "comment url: #{url}"
       if url.blank?
-        Comment.new "no comments exist"
+        return Comment.new "no comments exist"
       end
 
       res = @github.get url
       if res.status_code >= 500
         Lambda.print_log "return server error from api"
-        Comment.new "github api retrun server error"
+        return Comment.new "github api retrun server error"
       end
 
       begin
