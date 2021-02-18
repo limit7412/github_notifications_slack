@@ -18,17 +18,17 @@ class Usecase
           end
         pretext = "[#{item.subject.type}] #{message}"
 
-        # comment = item.comment || Github::Comment.new
+        comment = github.get_comment item.subject.comment_url
         Slack::Attachment.new(
           fallback = pretext,
-          author_name = item.comment.user.login,
-          author_icon = item.comment.user.avatar_url,
-          author_link = item.comment.user.html_url,
+          author_name = comment.user.login,
+          author_icon = comment.user.avatar_url,
+          author_link = comment.user.html_url,
           pretext = "#{item.mention? ? "<@#{ENV["SLACK_ID"]}> " : ""}#{pretext}",
           color = item.subject.color,
           title = item.subject.title,
-          title_link = item.comment.html_url,
-          text = item.comment.body,
+          title_link = comment.html_url,
+          text = comment.body,
           footer = !item.repository.full_name.nil? ? item.repository.full_name : "github",
           footer_icon = item.repository.owner.avatar_url,
         )
