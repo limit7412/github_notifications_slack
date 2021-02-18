@@ -22,16 +22,10 @@ module Github
       end
 
       Lambda.print_log "notifications body: #{res.body}"
-
-      Array(Notifications)
-        .from_json(res.body)
-        .map do |item|
-          item.comment = get_comment item.subject.comment_url
-          item
-        end
+      Array(Notifications).from_json(res.body)
     end
 
-    private def get_comment(url : String) : Comment
+    def get_comment(url : String) : Comment
       Lambda.print_log "comment url: #{url}"
       if url.blank?
         Comment.from_json %({

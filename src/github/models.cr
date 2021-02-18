@@ -8,7 +8,6 @@ module Github
     property reason : String
     property repository : Repository
     property subscription_url : String?
-    property comment : Comment
 
     def mention? : Bool
       [
@@ -20,13 +19,6 @@ module Github
         "team_mention",
         "review_requested",
       ].includes?(reason)
-    end
-
-    def initialize
-      @subject = Subject.new
-      @reason = ""
-      @repository = Repository.new
-      @comment = Comment.new
     end
   end
 
