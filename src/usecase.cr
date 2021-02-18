@@ -53,11 +53,10 @@ class Usecase
       author_icon = "",
       author_link = "",
       pretext = "<@#{ENV["SLACK_ID"]}> #{message}",
-      color = "",
+      color = "#EB4646",
       title = err.message,
       title_link = "",
       text = err.backtrace.join('\n'),
-      color = "#EB4646",
       footer = "github_notifications_slack (#{ENV["ENV"]})",
       footer_icon = "",
     )
