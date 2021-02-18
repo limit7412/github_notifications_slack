@@ -20,17 +20,17 @@ class Usecase
 
         comment = github.get_comment item.subject.comment_url
         Slack::Attachment.new(
-          fallback = pretext,
-          author_name = comment.user.login,
-          author_icon = comment.user.avatar_url,
-          author_link = comment.user.html_url,
-          pretext = "#{item.mention? ? "<@#{ENV["SLACK_ID"]}> " : ""}#{pretext}",
-          color = item.subject.color,
-          title = item.subject.title,
-          title_link = comment.html_url,
-          text = comment.body,
-          footer = !item.repository.full_name.nil? ? item.repository.full_name : "github",
-          footer_icon = item.repository.owner.avatar_url,
+          fallback: pretext,
+          author_name: comment.user.login,
+          author_icon: comment.user.avatar_url,
+          author_link: comment.user.html_url,
+          pretext: "#{item.mention? ? "<@#{ENV["SLACK_ID"]}> " : ""}#{pretext}",
+          color: item.subject.color,
+          title: item.subject.title,
+          title_link: comment.html_url,
+          text: comment.body,
+          footer: !item.repository.full_name.nil? ? item.repository.full_name : "github",
+          footer_icon: item.repository.owner.avatar_url,
         )
       end
 
@@ -49,17 +49,13 @@ class Usecase
 
     message = "エラーみたい…確認してみよっか"
     attachment = Slack::Attachment.new(
-      fallback = message,
-      author_name = "",
-      author_icon = "",
-      author_link = "",
-      pretext = "<@#{ENV["SLACK_ID"]}> #{message}",
-      color = "#EB4646",
-      title = err.message,
-      title_link = "",
-      text = err.backtrace.join('\n'),
-      footer = "github_notifications_slack (#{ENV["ENV"]})",
-      footer_icon = "",
+      fallback: message,
+      pretext: "<@#{ENV["SLACK_ID"]}> #{message}",
+      color: "#EB4646",
+      title: err.message,
+      text: err.backtrace.join('\n'),
+      footer: "github_notifications_slack (#{ENV["ENV"]})",
+      footer_icon: "",
     )
     slack.send_attachment attachment
 

@@ -28,19 +28,13 @@ module Github
     def get_comment(url : String) : Comment
       Lambda.print_log "comment url: #{url}"
       if url.blank?
-        Comment.from_json %({
-        "user": {},
-        "body": "no comments exist"
-      })
+        Comment.new "no comments exist"
       end
 
       res = @github.get url
       if res.status_code >= 500
         Lambda.print_log "return server error from api"
-        Comment.from_json %({
-        "user": {},
-        "body": "github api retrun server error"
-      })
+        Comment.new "github api retrun server error"
       end
 
       begin
@@ -48,10 +42,7 @@ module Github
         Comment.from_json res.body
       rescue
         Lambda.print_log "faild parse comment data"
-        Comment.from_json %({
-        "user": {},
-        "body": "faild parse comment data"
-      })
+        Comment.new "faild parse comment data"
       end
     end
 

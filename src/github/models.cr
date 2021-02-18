@@ -84,6 +84,10 @@ module Github
     property user : User
     property html_url : String?
     property body : String?
+
+    def initialize(@body)
+      @user = User.new
+    end
   end
 
   class User
@@ -92,5 +96,8 @@ module Github
     property login : String?
     property avatar_url : String?
     property html_url : String?
+
+    def initialize
+    end
   end
 end
