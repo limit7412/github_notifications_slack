@@ -18,6 +18,7 @@ class Usecase
           end
         pretext = "[#{item.subject.type}] #{message}"
 
+        # comment = item.comment || Github::Comment.new
         Slack::Attachment.new(
           fallback = pretext,
           author_name = item.comment.user.login,
