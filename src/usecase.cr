@@ -49,11 +49,17 @@ class Usecase
     message = "エラーみたい…確認してみよっか"
     attachment = Slack::Attachment.new(
       fallback = message,
+      author_name = "",
+      author_icon = "",
+      author_link = "",
       pretext = "<@#{ENV["SLACK_ID"]}> #{message}",
+      color = "",
       title = err.message,
+      title_link = "",
       text = err.backtrace.join('\n'),
       color = "#EB4646",
       footer = "github_notifications_slack (#{ENV["ENV"]})",
+      footer_icon = "",
     )
     slack.send_attachment attachment
 
