@@ -23,8 +23,8 @@ module Github
 
       Lambda.print_log "notifications body: #{res.body}"
 
-      Array(Notifications)
-        .from_json(res.body)
+      notifications = Array(Notifications).from_json(res.body)
+      notifications
         .map do |item|
           item.comment = get_comment item.subject.comment_url
           item
