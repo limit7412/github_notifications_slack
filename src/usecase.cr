@@ -5,7 +5,7 @@ require "./slack/repository"
 
 class Usecase
   def check_notifications
-    github = Github.new ENV["GITHUB_TOKEN"]
+    github = Github::NotificationRepository.new ENV["GITHUB_TOKEN"]
 
     notices = github
       .get_notifications
@@ -18,7 +18,7 @@ class Usecase
           end
         pretext = "[#{item.subject.type}] #{message}"
 
-        SlackAttachment.new(
+        Slack::Attachment.new(
           fallback = pretext,
           author_name = item.comment.user.login,
           author_icon = item.comment.user.avatar_url,
@@ -34,7 +34,7 @@ class Usecase
       end
 
     if notices.size != 0
-      slack = Slack.new ENV["WEBHOOK_URL"]
+      slack = Slack::PostRepository.new ENV["WEBHOOK_URL"]
       slack.send_attachments notices
 
       github.notification_to_read
@@ -44,10 +44,10 @@ class Usecase
   end
 
   def error(err)
-    slack = Slack.new ENV["ALERT_WEBHOOK_URL"]
+    slack = Slack::PostRepository.new ENV["ALERT_WEBHOOK_URL"]
 
     message = "エラーみたい…確認してみよっか"
-    attachment = SlackAttachment.new(
+    attachment = Slack::Attachment.new(
       fallback = message,
       pretext = "<@#{ENV["SLACK_ID"]}> #{message}",
       title = err.message,
