@@ -21,6 +21,13 @@ module Github
         "review_requested",
       ].includes?(reason)
     end
+
+    def initialize
+      @subject = Subject.new
+      @reason = ""
+      @repository = Repository.new
+      @comment = Comment.new
+    end
   end
 
   class Subject
