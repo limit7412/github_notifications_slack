@@ -1,7 +1,7 @@
 require "./runtime/lambda"
 require "./usecase"
 
-ServerlessLambda.handler "github_notifications_slack" do |event|
+Serverless::Lambda.handler "github_notifications_slack" do |event|
   uc = Usecase.new
   begin
     uc.check_notifications
