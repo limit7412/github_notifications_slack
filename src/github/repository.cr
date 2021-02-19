@@ -17,31 +17,31 @@ module Github
     def get_notifications : Array(Notifications)
       res = @github.get "/notifications"
       if res.status_code >= 500
-        Lambda.print_log "return server error from api"
+        Serverless::Lambda.print_log "return server error from api"
         Array(Notifications).new
       end
 
-      Lambda.print_log "notifications body: #{res.body}"
+      Serverless::Lambda.print_log "notifications body: #{res.body}"
       Array(Notifications).from_json(res.body)
     end
 
     def get_comment(url : String) : Comment
-      Lambda.print_log "comment url: #{url}"
+      Serverless::Lambda.print_log "comment url: #{url}"
       if url.blank?
         return Comment.new "no comments exist"
       end
 
       res = @github.get url
       if res.status_code >= 500
-        Lambda.print_log "return server error from api"
+        Serverless::Lambda.print_log "return server error from api"
         return Comment.new "github api retrun server error"
       end
 
       begin
-        Lambda.print_log "comment body: #{res.body}"
+        Serverless::Lambda.print_log "comment body: #{res.body}"
         Comment.from_json res.body
       rescue
-        Lambda.print_log "faild parse comment data"
+        Serverless::Lambda.print_log "faild parse comment data"
         Comment.new "faild parse comment data"
       end
     end
