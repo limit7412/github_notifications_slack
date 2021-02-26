@@ -100,4 +100,11 @@ module Github
     def initialize
     end
   end
+
+  class Error
+    include JSON::Serializable
+
+    property message : String
+    property documentation_url : String?
+  end
 end
