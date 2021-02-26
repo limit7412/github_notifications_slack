@@ -33,8 +33,12 @@ module Github
 
       res = @github.get url
       if res.status_code >= 500
-        Serverless::Lambda.print_log "return server error from api"
+        Serverless::Lambda.print_log "return 5xx error from api"
         return Comment.new "github api retrun server error"
+      elsif res.status_code >= 400
+        Serverless::Lambda.print_log "return 4xx error from api"
+        err = Error.from_json res.body
+        return Comment.new "github api retrun client error: #{err.message}"
       end
 
       begin
