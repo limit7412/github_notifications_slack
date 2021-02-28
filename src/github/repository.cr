@@ -17,8 +17,12 @@ module Github
     def get_notifications : Array(Notifications)
       res = @github.get "/notifications"
       if res.status_code >= 500
-        Serverless::Lambda.print_log "return server error from api"
-        Array(Notifications).new
+        Serverless::Lambda.print_log "return 5xx error from notifications api"
+        return Array(Notifications).new
+      elsif res.status_code >= 400
+        Serverless::Lambda.print_log "return 4xx error from notifications api"
+        err = Error.from_json res.body
+        raise "notifications api retrun client error: #{err.message}"
       end
 
       Serverless::Lambda.print_log "notifications body: #{res.body}"
@@ -33,12 +37,12 @@ module Github
 
       res = @github.get url
       if res.status_code >= 500
-        Serverless::Lambda.print_log "return 5xx error from api"
-        return Comment.new "github api retrun server error"
+        Serverless::Lambda.print_log "return 5xx error from comments api"
+        return Comment.new "comments api retrun server error"
       elsif res.status_code >= 400
-        Serverless::Lambda.print_log "return 4xx error from api"
+        Serverless::Lambda.print_log "return 4xx error from comments api"
         err = Error.from_json res.body
-        return Comment.new "github api retrun client error: #{err.message}"
+        return Comment.new "comments api retrun client error: #{err.message}"
       end
 
       begin
