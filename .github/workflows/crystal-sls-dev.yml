@@ -1,8 +1,6 @@
 name: crystal-sls
 
-on:
-  push:
-    branches: [ develop ]
+on: pull_request
 
 jobs:
   deploy:
