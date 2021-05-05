@@ -33,9 +33,8 @@ module Serverless
     end
 
     def print_log(log : String)
-      split_border = 1500000
-      log.scan(/.{1,#{split_border}}/).each do |line|
-        p `echo '#{log}'`
+      log.split(//).each_slice(50000) do |line|
+        puts `echo '#{line.join.gsub(/(\r\n|\r|\n|\f)/, "")}'`
         STDOUT.flush
       end
     end
