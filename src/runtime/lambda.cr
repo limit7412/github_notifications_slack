@@ -33,8 +33,11 @@ module Serverless
     end
 
     def print_log(log : String)
-      puts `echo '#{log}'`
-      STDOUT.flush
+      split_border = 1500000
+      log.scan(/.{1,#{split_border}}/).each do |line|
+        p `echo '#{log}'`
+        STDOUT.flush
+      end
     end
   end
 end
