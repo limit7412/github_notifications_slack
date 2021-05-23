@@ -1,12 +1,14 @@
 require "./runtime/lambda"
-require "./usecase"
+require "./notify/usecase"
+require "./error/usecase"
 
 Serverless::Lambda.handler "github_notifications_slack" do |event|
-  uc = Usecase.new
   begin
-    uc.check_notifications
+    notifyUC = Notify::Usecase.new
+    notifyUC.check_notifications
   rescue err
-    uc.error err
+    errUC = Error::Usecase.new
+    errUC.alert err
     raise err
   end
 end
