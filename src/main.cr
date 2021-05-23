@@ -8,7 +8,7 @@ Serverless::Lambda.handler "github_notifications_slack" do |event|
     notifyUC.check_notifications
   rescue err
     errUC = Error::Usecase.new
-    errUC.error err
+    errUC.alert err
     raise err
   end
 end

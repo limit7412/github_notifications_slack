@@ -3,7 +3,7 @@ require "../slack/repository"
 
 module Error
   class Usecase
-    def error(err)
+    def alert(err)
       slack = Slack::PostRepository.new ENV["ALERT_WEBHOOK_URL"]
 
       message = "エラーみたい…確認してみよっか"
