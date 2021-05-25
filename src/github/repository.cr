@@ -14,7 +14,7 @@ module Github
       end
     end
 
-    def get_notifications : Array(Notifications)
+    def find_notifications_unread : Array(Notifications)
       res = @github.get "/notifications"
       if res.status_code >= 500
         Serverless::Lambda.print_log "return 5xx error from notifications api"
@@ -29,7 +29,7 @@ module Github
       Array(Notifications).from_json(res.body)
     end
 
-    def get_comment(url : String) : Comment
+    def find_comment_by_url(url : String) : Comment
       Serverless::Lambda.print_log "comment url: #{url}"
       if url.blank?
         return Comment.new "no comments exist"

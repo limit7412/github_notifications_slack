@@ -11,7 +11,7 @@ module Notify
       githubUC = Github::Usecase.new
 
       notices = githubRepo
-        .get_notifications
+        .find_notifications_unread
         .map do |item|
           message =
             if item.subject.update?
