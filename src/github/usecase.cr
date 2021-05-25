@@ -7,7 +7,7 @@ module Github
     def to_slack_attachment(notify : Notifications, pretext : String, message : String) : Slack::Attachment
       repo = NotificationRepository.new ENV["GITHUB_TOKEN"]
 
-      comment = repo.get_comment notify.subject.comment_url
+      comment = repo.find_comment_by_url notify.subject.comment_url
       Slack::Attachment.new(
         fallback: pretext,
         author_name: comment.user.login,
