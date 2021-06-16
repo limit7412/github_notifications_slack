@@ -30,13 +30,5 @@ jobs:
       run: |
         aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/prod/env.yml .
 
-    - name: build
-      env:
-        REPOSITORY: build-image
-      run: |
-        docker build -t $REPOSITORY .
-        docker run --name $REPOSITORY -d $REPOSITORY /bin/sh
-        docker cp $REPOSITORY:/work/bootstrap .
-
     - name: deploy
       run: sls deploy --stage prod

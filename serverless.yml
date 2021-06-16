@@ -1,8 +1,6 @@
 service: github-notifications-slack
 
 custom:
-  defaultAccount: dummy
-  defaultDigest: dummy
   defaultStage: dev
 
 provider:
@@ -10,13 +8,20 @@ provider:
   runtime: provided
   timeout: 300
   region: ap-northeast-1
+  ecr:
+    images:
+      appImage:
+        path: ./
   stage: ${opt:stage, self:custom.defaultStage}
   environment:
     ${file(./env.yml)}
 
 functions:
   github_notifications_slack:
-    handler: github_notifications_slack
+    image:
+      name: appImage
+      command:
+        - github_notifications_slack
     events:
       # スケジュールは5mまでの間隔でしか登録できない
       # https://dev.classmethod.jp/cloud/aws/invoke-lambda-at-1-minute-interval/
