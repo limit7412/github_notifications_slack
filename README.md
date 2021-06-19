@@ -1,5 +1,5 @@
 # github_notifications_slack
-![crystal-sls](https://github.com/limit7412/github_notifications_slack/workflows/crystal-sls/badge.svg)
+[![serverless](https://github.com/limit7412/github_notifications_slack/actions/workflows/serverless-prod.yml/badge.svg?branch=master)](https://github.com/limit7412/github_notifications_slack/actions/workflows/serverless-prod.yml)
 
   - githubのアカウントの通知をslackで流したい
   - crystal
