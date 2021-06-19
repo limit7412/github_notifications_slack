@@ -1,6 +1,8 @@
-name: serverless-lambda-dev
+name: serverless
 
-on: pull_request
+on:
+  push:
+    branches: [ master ]
 
 jobs:
   deploy:
@@ -26,7 +28,7 @@ jobs:
 
     - name: get env
       run: |
-        aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/dev/env.yml .
+        aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/prod/env.yml .
 
     - name: deploy
-      run: sls deploy --stage dev
+      run: sls deploy --stage prod
