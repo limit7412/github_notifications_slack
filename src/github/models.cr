@@ -38,6 +38,7 @@ module Github
       PullRequest = "PullRequest"
       Issue       = "Issue"
       Commit      = "Commit"
+      Discussion  = "Discussion"
     end
 
     def update? : Bool
@@ -45,6 +46,7 @@ module Github
         Type::PullRequest,
         Type::Issue,
         Type::Commit,
+        Type::Discussion,
       ].includes?(type)
     end
 
@@ -56,6 +58,8 @@ module Github
         "#A9D0F5"
       when Type::Commit
         "#f5d7a9"
+      when Type::Discussion
+        "#7fffd4"
       else
         "#D8D8D8"
       end
