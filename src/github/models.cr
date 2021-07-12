@@ -18,6 +18,7 @@ module Github
         "mention",
         "team_mention",
         "review_requested",
+        "ci_activity",
       ].includes?(reason)
     end
   end
