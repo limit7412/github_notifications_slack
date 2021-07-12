@@ -36,30 +36,30 @@ module Github
     property latest_comment_url : String = ""
 
     module Type
-      PullRequest = "PullRequest"
-      Issue       = "Issue"
-      Commit      = "Commit"
-      Discussion  = "Discussion"
+      PULL_REQUEST = "PullRequest"
+      ISSUE        = "Issue"
+      COMMIT       = "Commit"
+      DISCUSSION   = "Discussion"
     end
 
     def update? : Bool
       [
-        Type::PullRequest,
-        Type::Issue,
-        Type::Commit,
-        Type::Discussion,
+        Type::PULL_REQUEST,
+        Type::ISSUE,
+        Type::COMMIT,
+        Type::DISCUSSION,
       ].includes?(type)
     end
 
     def color : String
       case type
-      when Type::PullRequest
+      when Type::PULL_REQUEST
         "#F6CEE3"
-      when Type::Issue
+      when Type::ISSUE
         "#A9D0F5"
-      when Type::Commit
+      when Type::COMMIT
         "#f5d7a9"
-      when Type::Discussion
+      when Type::DISCUSSION
         "#7fffd4"
       else
         "#D8D8D8"
