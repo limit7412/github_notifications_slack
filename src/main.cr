@@ -4,11 +4,11 @@ require "./error/usecase"
 
 Serverless::Lambda.handler "github_notifications_slack" do |event|
   begin
-    notifyUC = Notify::Usecase.new
-    notifyUC.check_notifications
+    notify_uc = Notify::Usecase.new
+    notify_uc.check_notifications
   rescue err
-    errUC = Error::Usecase.new
-    errUC.alert err
+    err_uc = Error::Usecase.new
+    err_uc.alert err
     raise err
   end
 end
