@@ -7,10 +7,10 @@ require "../slack/repository"
 module Notify
   class Usecase
     def check_notifications
-      githubRepo = Github::NotificationRepository.new ENV["GITHUB_TOKEN"]
-      githubUC = Github::Usecase.new
+      github_repo = Github::NotificationRepository.new ENV["GITHUB_TOKEN"]
+      github_uc = Github::Usecase.new
 
-      notices = githubRepo
+      notices = github_repo
         .find_notifications_unread
         .map do |item|
           message =
@@ -21,14 +21,14 @@ module Notify
             end
           pretext = "[#{item.subject.type}] #{message}"
 
-          githubUC.to_slack_attachment item, pretext, message
+          github_uc.to_slack_attachment item, pretext, message
         end
 
       if notices.size != 0
-        slackRepo = Slack::PostRepository.new ENV["WEBHOOK_URL"]
-        slackRepo.send_attachments notices
+        slack_repo = Slack::PostRepository.new ENV["WEBHOOK_URL"]
+        slack_repo.send_attachments notices
 
-        githubRepo.notification_to_read
+        github_repo.notification_to_read
       end
 
       {msg: "ok"}
