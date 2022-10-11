@@ -8,6 +8,6 @@ targets:
   bootstrap:
     main: src/main.cr
 
-crystal: 0.34.0
+crystal: 1.5.1
 
 license: MIT
