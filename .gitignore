@@ -8,3 +8,5 @@ jspm_packages
 bootstrap
 lib
 env.yml
+
+.idea/
