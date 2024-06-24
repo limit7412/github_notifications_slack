@@ -1,5 +1,3 @@
-org: qazx7412
-app: github-notifications-slack
 service: github-notifications-slack
 
 custom:
