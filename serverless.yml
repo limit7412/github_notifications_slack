@@ -8,9 +8,10 @@ custom:
   scripts:
     hooks:
       # sls deploy / sls package 時に bootstrap を静的ビルドする。
-      # macOS など非 Linux 環境でも Lambda(provided.al2) 互換のバイナリを得るため Docker を使用。
+      # macOS / Apple Silicon でも Lambda(provided.al2, x86_64) 互換の
+      # 静的バイナリを得るため、linux/amd64 を明示して Docker でビルドする。
       'before:package:createDeploymentArtifacts': |
-        docker run --rm -v "$PWD":/work -w /work crystallang/crystal:latest \
+        docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work crystallang/crystal:latest \
           crystal build --link-flags -static -o bootstrap src/main.cr
         chmod +x bootstrap
 
@@ -30,6 +31,9 @@ package:
 
 functions:
   github_notifications_slack:
-    handler: bootstrap
+    # provided ランタイムは実体としてパッケージ直下の bootstrap を実行する。
+    # この handler 文字列は _HANDLER として渡され、src/main.cr の
+    # Serverless::Lambda.handler "github_notifications_slack" と一致させる必要がある。
+    handler: github_notifications_slack
     events:
       - schedule: rate(1 minute)
