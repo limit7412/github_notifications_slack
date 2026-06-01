@@ -2,35 +2,39 @@ name: serverless
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
+      - name: setup node.js
+        uses: actions/setup-node@v4
 
-    - name: setup node.js
-      uses: actions/setup-node@v4
+      - name: install sls
+        run: npm i -g serverless
 
-    - name: install sls
-      run: npm i -g serverless
+      - name: checkout
+        uses: actions/checkout@v4
 
-    - name: checkout
-      uses: actions/checkout@v3
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-northeast-1
 
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-1
+      - name: get env
+        run: |
+          aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/prod/env.yml .
 
-    - name: get env
-      run: |
-        aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/prod/env.yml .
+      - name: install plugins
+        run: npm install
 
-    - name: deploy
-      run: sls deploy --stage prod
-      env:
-        SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+      - name: deploy
+        run: sls deploy --stage prod
+        env:
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}

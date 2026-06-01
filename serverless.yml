@@ -1,27 +1,40 @@
 service: github-notifications-slack
 
+plugins:
+  - serverless-plugin-scripts
+
 custom:
   defaultStage: dev
+  scripts:
+    hooks:
+      # sls deploy / sls package 時に bootstrap を静的ビルドする。
+      # macOS / Apple Silicon でも Lambda(provided.al2, x86_64) 互換の
+      # 静的バイナリを得るため、linux/amd64 を明示して Docker でビルドする。
+      # chmod はコンテナ内(root)で実行する。Linux ランナーでは生成物が
+      # root 所有になり、コンテナ外の runner ユーザーでは chmod できないため。
+      'before:package:createDeploymentArtifacts': |
+        docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work crystallang/crystal:latest \
+          sh -c "crystal build --link-flags -static -o bootstrap src/main.cr && chmod +x bootstrap"
 
 provider:
   name: aws
-  runtime: provided
+  runtime: provided.al2
   timeout: 300
   region: ap-northeast-1
-  ecr:
-    images:
-      appImage:
-        path: ./
-        platform: linux/amd64
   stage: ${opt:stage, self:custom.defaultStage}
   environment:
     ${file(./env.yml)}
 
+package:
+  patterns:
+    - '!./**'
+    - bootstrap
+
 functions:
   github_notifications_slack:
-    image:
-      name: appImage
-      command:
-        - github_notifications_slack
+    # provided ランタイムは実体としてパッケージ直下の bootstrap を実行する。
+    # この handler 文字列は _HANDLER として渡され、src/main.cr の
+    # Serverless::Lambda.handler "github_notifications_slack" と一致させる必要がある。
+    handler: github_notifications_slack
     events:
       - schedule: rate(1 minute)
