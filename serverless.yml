@@ -1,27 +1,35 @@
 service: github-notifications-slack
 
+plugins:
+  - serverless-plugin-scripts
+
 custom:
   defaultStage: dev
+  scripts:
+    hooks:
+      # sls deploy / sls package 時に bootstrap を静的ビルドする。
+      # macOS など非 Linux 環境でも Lambda(provided.al2) 互換のバイナリを得るため Docker を使用。
+      'before:package:createDeploymentArtifacts': |
+        docker run --rm -v "$PWD":/work -w /work crystallang/crystal:latest \
+          crystal build --link-flags -static -o bootstrap src/main.cr
+        chmod +x bootstrap
 
 provider:
   name: aws
-  runtime: provided
+  runtime: provided.al2
   timeout: 300
   region: ap-northeast-1
-  ecr:
-    images:
-      appImage:
-        path: ./
-        platform: linux/amd64
   stage: ${opt:stage, self:custom.defaultStage}
   environment:
     ${file(./env.yml)}
 
+package:
+  patterns:
+    - '!./**'
+    - bootstrap
+
 functions:
   github_notifications_slack:
-    image:
-      name: appImage
-      command:
-        - github_notifications_slack
+    handler: bootstrap
     events:
       - schedule: rate(1 minute)

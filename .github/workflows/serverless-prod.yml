@@ -30,6 +30,9 @@ jobs:
       run: |
         aws s3 cp s3://limit7412-workflow-env/github_notifications_slack/prod/env.yml .
 
+    - name: install plugins
+      run: npm install
+
     - name: deploy
       run: sls deploy --stage prod
       env:

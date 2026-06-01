@@ -1,0 +1,8 @@
+{
+  "name": "github-notifications-slack",
+  "version": "0.2.0",
+  "private": true,
+  "devDependencies": {
+    "serverless-plugin-scripts": "^1.0.2"
+  }
+}
