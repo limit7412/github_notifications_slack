@@ -8,17 +8,18 @@ custom:
   scripts:
     hooks:
       # sls deploy / sls package 時に bootstrap を静的ビルドする。
-      # macOS / Apple Silicon でも Lambda(provided.al2023, x86_64) 互換の
-      # 静的バイナリを得るため、linux/amd64 を明示して Docker でビルドする。
+      # macOS / Apple Silicon でも Lambda(provided.al2023, arm64) 互換の
+      # 静的バイナリを得るため、linux/arm64 を明示して Docker でビルドする。
       # chmod はコンテナ内(root)で実行する。Linux ランナーでは生成物が
       # root 所有になり、コンテナ外の runner ユーザーでは chmod できないため。
       'before:package:createDeploymentArtifacts': |
-        docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work crystallang/crystal:latest \
+        docker run --rm --platform linux/arm64 -v "$PWD":/work -w /work crystallang/crystal:latest \
           sh -c "crystal build --link-flags -static -o bootstrap src/main.cr && chmod +x bootstrap"
 
 provider:
   name: aws
   runtime: provided.al2023
+  architecture: arm64
   timeout: 300
   region: ap-northeast-1
   stage: ${opt:stage, self:custom.defaultStage}
