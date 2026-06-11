@@ -20,7 +20,10 @@ module Github
         Serverless::Lambda.print_log "return 5xx error from notifications api"
         return Array(Notifications).new
       elsif res.status_code == 401
-        # GitHub が断続的に 401 を返すことがあるため、毎分の次回実行に任せてスキップする
+        # GitHub が断続的に 401 を返すことがあるため、毎分の次回実行に任せてスキップする。
+        # トークン失効などの恒久的な 401 までサイレントに握りつぶす点は本来リトライや
+        # 連続失敗の監視で区別すべきだが、個人用途の通知ツールであり実装コストに
+        # 見合わないため割り切る。
         Serverless::Lambda.print_log "return 401 error from notifications api, skip"
         return Array(Notifications).new
       elsif res.status_code >= 400
