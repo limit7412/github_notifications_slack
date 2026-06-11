@@ -19,6 +19,10 @@ module Github
       if res.status_code >= 500
         Serverless::Lambda.print_log "return 5xx error from notifications api"
         return Array(Notifications).new
+      elsif res.status_code == 401
+        # GitHub が断続的に 401 を返すことがあるため、毎分の次回実行に任せてスキップする
+        Serverless::Lambda.print_log "return 401 error from notifications api, skip"
+        return Array(Notifications).new
       elsif res.status_code >= 400
         Serverless::Lambda.print_log "return 4xx error from notifications api"
         err = Error.from_json res.body
