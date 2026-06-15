@@ -1,7 +1,7 @@
 require "json"
 
 module Github
-  class Notifications
+  class Notification
     include JSON::Serializable
 
     MENTION_REASONS = [

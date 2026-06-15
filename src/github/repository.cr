@@ -14,18 +14,18 @@ module Github
       end
     end
 
-    def find_notifications_unread : Array(Notifications)
+    def find_notifications_unread : Array(Notification)
       res = @github.get "/notifications"
       if res.status.server_error?
         Serverless::Lambda.print_log "return 5xx error from notifications api"
-        return [] of Notifications
+        return [] of Notification
       elsif res.status.unauthorized?
         # GitHub が断続的に 401 を返すことがあるため、毎分の次回実行に任せてスキップする。
         # トークン失効などの恒久的な 401 までサイレントに握りつぶす点は本来リトライや
         # 連続失敗の監視で区別すべきだが、個人用途の通知ツールであり実装コストに
         # 見合わないため割り切る。
         Serverless::Lambda.print_log "return 401 error from notifications api, skip"
-        return [] of Notifications
+        return [] of Notification
       elsif res.status.client_error?
         Serverless::Lambda.print_log "return 4xx error from notifications api"
         err = Error.from_json res.body
@@ -33,7 +33,7 @@ module Github
       end
 
       Serverless::Lambda.print_log "notifications body: #{res.body}"
-      Array(Notifications).from_json(res.body)
+      Array(Notification).from_json(res.body)
     end
 
     def find_comment_by_url(url : String) : Comment
