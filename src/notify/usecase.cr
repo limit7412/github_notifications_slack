@@ -24,7 +24,7 @@ module Notify
           github_uc.to_slack_attachment item, pretext, message
         end
 
-      if notices.size != 0
+      unless notices.empty?
         slack_repo = Slack::PostRepository.new ENV["WEBHOOK_URL"]
         slack_repo.send_attachments notices
 

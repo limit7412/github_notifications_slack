@@ -18,7 +18,7 @@ module Github
         title: notify.subject.title,
         title_link: comment.html_url,
         text: comment.body,
-        footer: !notify.repository.full_name.nil? ? notify.repository.full_name : "github",
+        footer: notify.repository.full_name || "github",
         footer_icon: notify.repository.owner.avatar_url,
       )
     end

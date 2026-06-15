@@ -4,36 +4,34 @@ module Github
   class Notifications
     include JSON::Serializable
 
-    property subject : Subject
-    property reason : String
-    property repository : Repository
-    property subscription_url : String?
+    MENTION_REASONS = [
+      "assign",
+      "author",
+      "comment",
+      "invitation",
+      "mention",
+      "team_mention",
+      "review_requested",
+      # "ci_activity",
+    ]
+
+    getter subject : Subject
+    getter reason : String
+    getter repository : Repository
+    getter subscription_url : String?
 
     def mention? : Bool
-      [
-        "assign",
-        "author",
-        "comment",
-        "invitation",
-        "mention",
-        "team_mention",
-        "review_requested",
-        # "ci_activity",
-      ].includes?(reason)
+      reason.in?(MENTION_REASONS)
     end
   end
 
   class Subject
     include JSON::Serializable
 
-    property type : String
-    property title : String?
-
-    @[JSON::Field(emit_null: false)]
-    property url : String = ""
-
-    @[JSON::Field(emit_null: false)]
-    property latest_comment_url : String = ""
+    getter type : String
+    getter title : String?
+    getter url : String = ""
+    getter latest_comment_url : String = ""
 
     module Type
       PULL_REQUEST = "PullRequest"
@@ -42,13 +40,15 @@ module Github
       DISCUSSION   = "Discussion"
     end
 
+    UPDATE_TYPES = [
+      Type::PULL_REQUEST,
+      Type::ISSUE,
+      Type::COMMIT,
+      Type::DISCUSSION,
+    ]
+
     def update? : Bool
-      [
-        Type::PULL_REQUEST,
-        Type::ISSUE,
-        Type::COMMIT,
-        Type::DISCUSSION,
-      ].includes?(type)
+      type.in?(UPDATE_TYPES)
     end
 
     def color : String
@@ -67,28 +67,24 @@ module Github
     end
 
     def comment_url : String
-      if !latest_comment_url.blank?
-        latest_comment_url
-      else
-        url
-      end
+      latest_comment_url.presence || url
     end
   end
 
   class Repository
     include JSON::Serializable
 
-    property full_name : String?
-    property html_url : String?
-    property owner : User
+    getter full_name : String?
+    getter html_url : String?
+    getter owner : User
   end
 
   class Comment
     include JSON::Serializable
 
-    property user : User
-    property html_url : String?
-    property body : String?
+    getter user : User
+    getter html_url : String?
+    getter body : String?
 
     def initialize(@body)
       @user = User.new
@@ -98,9 +94,9 @@ module Github
   class User
     include JSON::Serializable
 
-    property login : String?
-    property avatar_url : String?
-    property html_url : String?
+    getter login : String?
+    getter avatar_url : String?
+    getter html_url : String?
 
     def initialize
     end
@@ -109,7 +105,7 @@ module Github
   class Error
     include JSON::Serializable
 
-    property message : String
-    property documentation_url : String?
+    getter message : String
+    getter documentation_url : String?
   end
 end
