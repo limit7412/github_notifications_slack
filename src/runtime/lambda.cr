@@ -25,7 +25,7 @@ module Serverless
         rescue error
           body = {
             msg: "Internal Lambda Error",
-            err: error.message,
+            err: error.message || error.class.name,
           }
           header = HTTP::Headers{"Lambda-Runtime-Function-Error-Type" => "Unhandled"}
           url = "http://#{ENV["AWS_LAMBDA_RUNTIME_API"]}/2018-06-01/runtime/invocation/#{request_id}/error"
