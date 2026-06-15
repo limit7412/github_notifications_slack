@@ -7,6 +7,7 @@ module Slack
   class PostRepository
     def initialize(url : String)
       @uri = URI.parse url
+      @client = HTTP::Client.new @uri
     end
 
     def send_attachment(attachment : Attachment)
@@ -18,7 +19,7 @@ module Slack
     end
 
     private def send_post(post : Post)
-      HTTP::Client.post(@uri, body: post.to_json)
+      @client.post(@uri.request_target, body: post.to_json)
     end
   end
 end

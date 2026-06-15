@@ -12,16 +12,25 @@ ALERT_WEBHOOK_URL = ENV["ALERT_WEBHOOK_URL"]
 SLACK_ID          = ENV["SLACK_ID"]
 APP_ENV           = ENV["ENV"]
 
+# 依存はコールドスタート時に一度だけ生成し、ウォームスタート間で使い回すことで
+# HTTP::Client のコネクション（TCP/SSL）を再利用する。
+github_repo = Github::NotificationRepository.new GITHUB_TOKEN
+notify_uc = Notify::Usecase.new(
+  github_repo,
+  Github::Usecase.new(github_repo, SLACK_ID),
+  Slack::PostRepository.new(WEBHOOK_URL),
+)
+error_uc = Error::Usecase.new(
+  Slack::PostRepository.new(ALERT_WEBHOOK_URL),
+  SLACK_ID,
+  APP_ENV,
+)
+
 Serverless::Lambda.handler "github_notifications_slack" do |_|
   begin
-    github_repo = Github::NotificationRepository.new GITHUB_TOKEN
-    github_uc = Github::Usecase.new github_repo, SLACK_ID
-    slack_repo = Slack::PostRepository.new WEBHOOK_URL
-
-    Notify::Usecase.new(github_repo, github_uc, slack_repo).check_notifications
+    notify_uc.check_notifications
   rescue err
-    alert_repo = Slack::PostRepository.new ALERT_WEBHOOK_URL
-    Error::Usecase.new(alert_repo, SLACK_ID, APP_ENV).alert err
+    error_uc.alert err
     raise err
   end
 end
