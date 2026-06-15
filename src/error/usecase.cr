@@ -12,7 +12,7 @@ module Error
         pretext: "<@#{ENV["SLACK_ID"]}> #{message}",
         color: "#EB4646",
         title: err.message,
-        text: err.backtrace.join('\n'),
+        text: err.backtrace?.try(&.join('\n')),
         footer: "github_notifications_slack (#{ENV["ENV"]})",
         footer_icon: "",
       )

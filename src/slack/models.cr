@@ -4,17 +4,17 @@ module Slack
   class Attachment
     include JSON::Serializable
 
-    property fallback : String?
-    property author_name : String?
-    property author_icon : String?
-    property author_link : String?
-    property pretext : String?
-    property color : String?
-    property title : String?
-    property title_link : String?
-    property text : String?
-    property footer : String?
-    property footer_icon : String?
+    getter fallback : String?
+    getter author_name : String?
+    getter author_icon : String?
+    getter author_link : String?
+    getter pretext : String?
+    getter color : String?
+    getter title : String?
+    getter title_link : String?
+    getter text : String?
+    getter footer : String?
+    getter footer_icon : String?
 
     def initialize(
       @fallback = nil,
@@ -27,7 +27,7 @@ module Slack
       @title_link = nil,
       @text = nil,
       @footer = nil,
-      @footer_icon = nil
+      @footer_icon = nil,
     )
     end
   end
@@ -35,7 +35,7 @@ module Slack
   class Post
     include JSON::Serializable
 
-    property attachments : Array(Attachment)
+    getter attachments : Array(Attachment)
 
     def initialize(@attachments)
     end

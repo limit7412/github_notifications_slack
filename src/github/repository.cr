@@ -16,20 +16,20 @@ module Github
 
     def find_notifications_unread : Array(Notifications)
       res = @github.get "/notifications"
-      if res.status_code >= 500
+      if res.status.server_error?
         Serverless::Lambda.print_log "return 5xx error from notifications api"
-        return Array(Notifications).new
-      elsif res.status_code == 401
+        return [] of Notifications
+      elsif res.status.unauthorized?
         # GitHub が断続的に 401 を返すことがあるため、毎分の次回実行に任せてスキップする。
         # トークン失効などの恒久的な 401 までサイレントに握りつぶす点は本来リトライや
         # 連続失敗の監視で区別すべきだが、個人用途の通知ツールであり実装コストに
         # 見合わないため割り切る。
         Serverless::Lambda.print_log "return 401 error from notifications api, skip"
-        return Array(Notifications).new
-      elsif res.status_code >= 400
+        return [] of Notifications
+      elsif res.status.client_error?
         Serverless::Lambda.print_log "return 4xx error from notifications api"
         err = Error.from_json res.body
-        raise "notifications api retrun client error: #{err.message}"
+        raise "notifications api return client error: #{err.message}"
       end
 
       Serverless::Lambda.print_log "notifications body: #{res.body}"
@@ -43,21 +43,21 @@ module Github
       end
 
       res = @github.get url
-      if res.status_code >= 500
+      if res.status.server_error?
         Serverless::Lambda.print_log "return 5xx error from comments api"
-        return Comment.new "comments api retrun server error"
-      elsif res.status_code >= 400
+        return Comment.new "comments api return server error"
+      elsif res.status.client_error?
         Serverless::Lambda.print_log "return 4xx error from comments api"
         err = Error.from_json res.body
-        return Comment.new "comments api retrun client error: #{err.message}"
+        return Comment.new "comments api return client error: #{err.message}"
       end
 
       begin
         Serverless::Lambda.print_log "comment body: #{res.body}"
         Comment.from_json res.body
       rescue
-        Serverless::Lambda.print_log "faild parse comment data"
-        Comment.new "faild parse comment data"
+        Serverless::Lambda.print_log "failed parse comment data"
+        Comment.new "failed parse comment data"
       end
     end
 
