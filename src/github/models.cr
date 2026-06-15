@@ -4,7 +4,7 @@ module Github
   class Notifications
     include JSON::Serializable
 
-    MENTION_REASONS = [
+    MENTION_REASONS = {
       "assign",
       "author",
       "comment",
@@ -13,7 +13,7 @@ module Github
       "team_mention",
       "review_requested",
       # "ci_activity",
-    ]
+    }
 
     getter subject : Subject
     getter reason : String
@@ -40,12 +40,12 @@ module Github
       DISCUSSION   = "Discussion"
     end
 
-    UPDATE_TYPES = [
+    UPDATE_TYPES = {
       Type::PULL_REQUEST,
       Type::ISSUE,
       Type::COMMIT,
       Type::DISCUSSION,
-    ]
+    }
 
     def update? : Bool
       type.in?(UPDATE_TYPES)

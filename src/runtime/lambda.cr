@@ -37,9 +37,13 @@ module Serverless
 
     # CloudWatch では改行ごとにログエントリが分割されるため、改行を除去して
     # 1 エントリにまとめつつ、長い本文は適度なチャンクに分割して出力する。
+    # 中間の Array(Char) を作らずに済むよう文字列スライスで分割する。
     def print_log(log : String)
-      log.gsub(/(\r\n|\r|\n|\f)/, "").each_char.each_slice(50000) do |chunk|
-        Log.info { chunk.join }
+      cleaned = log.gsub(/(\r\n|\r|\n|\f)/, "")
+      offset = 0
+      while offset < cleaned.size
+        Log.info { cleaned[offset, 50000] }
+        offset += 50000
       end
     end
   end
