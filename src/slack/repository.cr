@@ -5,24 +5,20 @@ require "./models"
 
 module Slack
   class PostRepository
-    def initialize(@url : String)
-      @uri = URI.parse @url
-    end
-
-    private def send_post(post : Post)
-      HTTP::Client.post(@uri,
-        body: post.to_json
-      )
+    def initialize(url : String)
+      @uri = URI.parse url
     end
 
     def send_attachment(attachment : Attachment)
-      post = Post.new [attachment]
-      send_post post
+      send_attachments [attachment]
     end
 
     def send_attachments(attachments : Array(Attachment))
-      post = Post.new attachments
-      send_post post
+      send_post Post.new(attachments)
+    end
+
+    private def send_post(post : Post)
+      HTTP::Client.post(@uri, body: post.to_json)
     end
   end
 end
