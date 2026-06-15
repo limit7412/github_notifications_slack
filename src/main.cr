@@ -19,9 +19,9 @@ Serverless::Lambda.handler "github_notifications_slack" do |_|
     slack_repo = Slack::PostRepository.new WEBHOOK_URL
 
     Notify::Usecase.new(github_repo, github_uc, slack_repo).check_notifications
-  rescue err
+  rescue error
     alert_repo = Slack::PostRepository.new ALERT_WEBHOOK_URL
-    Error::Usecase.new(alert_repo, SLACK_ID, APP_ENV).alert err
-    raise err
+    Error::Usecase.new(alert_repo, SLACK_ID, APP_ENV).alert error
+    raise error
   end
 end
