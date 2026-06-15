@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check:
+    name: format / lint / spec
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install crystal
+        uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: latest
+
+      - name: install shards
+        run: shards install
+
+      - name: check format
+        run: crystal tool format --check
+
+      - name: lint with ameba
+        run: ./bin/ameba
+
+      - name: run specs
+        run: crystal spec
