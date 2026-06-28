@@ -10,11 +10,23 @@ custom:
       # sls deploy / sls package 時に bootstrap を静的ビルドする。
       # macOS / Apple Silicon でも Lambda(provided.al2023, arm64) 互換の
       # 静的バイナリを得るため、linux/arm64 を明示して Docker でビルドする。
+      #
+      # ベースイメージは musl の Alpine(crystallang/crystal:*-alpine) を使う。
+      # glibc を静的リンク(--link-flags -static)したバイナリは provided.al2023
+      # 上で外部 HTTPS が失敗し(OpenSSL の STORE 初期化エラー等)、
+      # api.github.com / hooks.slack.com への通信が一切できず通知を送れなくなる。
+      # amazonlinux:2023 上で再現確認済み: glibc 静的=失敗 / musl 静的=成功。
+      # musl は完全な静的バイナリでも外部通信が動くため Alpine でビルドする。
+      #
+      # 完全静的リンクには OpenSSL/zlib/libevent の静的ライブラリ(.a)が必要。
+      # 現行イメージには同梱されているが、将来イメージから外れてもリンクエラー
+      # (cannot find -lssl 等)にならないよう apk add で明示的に導入しておく。
+      #
       # chmod はコンテナ内(root)で実行する。Linux ランナーでは生成物が
       # root 所有になり、コンテナ外の runner ユーザーでは chmod できないため。
       'before:package:createDeploymentArtifacts': |
-        docker run --rm --platform linux/arm64 -v "$PWD":/work -w /work crystallang/crystal:latest \
-          sh -c "crystal build --link-flags -static -o bootstrap src/main.cr && chmod +x bootstrap"
+        docker run --rm --platform linux/arm64 -v "$PWD":/work -w /work crystallang/crystal:latest-alpine \
+          sh -c "apk add --no-cache openssl-libs-static zlib-static libevent-static && crystal build --link-flags -static -o bootstrap src/main.cr && chmod +x bootstrap"
 
 provider:
   name: aws
