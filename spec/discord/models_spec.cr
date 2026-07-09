@@ -82,6 +82,20 @@ describe Discord::Post do
       posts[2].embeds.size.should eq 3
     end
 
+    it "splits a chunk before the combined embed length exceeds 6000 chars" do
+      # 1 embed = title(2) + description(2900) = 2902 文字。
+      # 2 件で 5804 ≤ 6000 は同一メッセージ、3 件目で 8706 を超えるため分割される。
+      messages = Array.new(3) { |i| Notify::Message.new(title: "t#{i}", text: "d" * 2900) }
+      posts = Discord::Post.build(messages, "123")
+
+      posts.size.should eq 2
+      posts[0].embeds.size.should eq 2
+      posts[1].embeds.size.should eq 1
+      posts.each do |post|
+        post.embeds.sum(&.char_count).should be <= Discord::TOTAL_CHARS_LIMIT
+      end
+    end
+
     it "sets a mention in content when any message in a chunk mentions" do
       messages = [
         Notify::Message.new(title: "a"),

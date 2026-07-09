@@ -4,6 +4,7 @@ require "../notify/models"
 module Discord
   # Discord の制約値。
   EMBEDS_PER_MESSAGE =   10 # 1 メッセージあたり embeds 最大 10 件
+  TOTAL_CHARS_LIMIT  = 6000 # 1 メッセージ内 embeds 合計文字数の上限
   CONTENT_LIMIT      = 2000 # content 最大 2000 文字
   DESCRIPTION_LIMIT  = 4096 # embed description 最大 4096 文字
   TITLE_LIMIT        =  256 # embed title 最大 256 文字
@@ -21,16 +22,41 @@ module Discord
     def initialize(@embeds, @content = nil)
     end
 
-    # 中立メッセージ列を Discord の投稿単位（embeds 最大 10 件）へ分割して組み立てる。
+    # 中立メッセージ列を Discord の投稿単位へ分割して組み立てる。
+    # embeds は最大 10 件、かつ 1 メッセージ内 embeds の合計文字数が 6000 を
+    # 超えないよう詰め込む（超過すると Discord が 400 を返すため）。
     def self.build(messages : Array(Notify::Message), mention_id : String) : Array(Post)
-      messages.each_slice(EMBEDS_PER_MESSAGE).map do |chunk|
-        # メンションは embed 内では機能しないため content に出力する。
-        content =
-          if chunk.any?(&.mention?)
-            Discord.truncate("<@#{mention_id}>", CONTENT_LIMIT)
-          end
-        Post.new(chunk.map { |message| Embed.from_message(message) }, content)
-      end.to_a
+      posts = [] of Post
+      chunk = [] of Embed
+      chunk_chars = 0
+      mention = false
+
+      flush = -> do
+        return if chunk.empty?
+        posts << Post.new(chunk, mention_content(mention, mention_id))
+        chunk = [] of Embed
+        chunk_chars = 0
+        mention = false
+      end
+
+      messages.each do |message|
+        embed = Embed.from_message(message)
+        size = embed.char_count
+        if !chunk.empty? && (chunk.size >= EMBEDS_PER_MESSAGE || chunk_chars + size > TOTAL_CHARS_LIMIT)
+          flush.call
+        end
+        chunk << embed
+        chunk_chars += size
+        mention = true if message.mention?
+      end
+      flush.call
+
+      posts
+    end
+
+    # メンションは embed 内では機能しないため content に出力する。
+    private def self.mention_content(mention : Bool, mention_id : String) : String?
+      Discord.truncate("<@#{mention_id}>", CONTENT_LIMIT) if mention
     end
   end
 
@@ -52,6 +78,14 @@ module Discord
       @author = nil,
       @footer = nil,
     )
+    end
+
+    # Discord の 6000 文字制限が対象とするフィールド（title / description /
+    # author.name / footer.text）の合計文字数。
+    def char_count : Int32
+      [title, description, author.try(&.name), footer.try(&.text)]
+        .compact
+        .sum(&.size)
     end
 
     def self.from_message(message : Notify::Message) : Embed

@@ -12,8 +12,9 @@ GITHUB_TOKEN      = ENV["GITHUB_TOKEN"]
 WEBHOOK_URL       = ENV["WEBHOOK_URL"]
 ALERT_WEBHOOK_URL = ENV["ALERT_WEBHOOK_URL"]
 # メンション先 ID は Slack / Discord で体系が異なるため一般化する。
-# 後方互換として未設定時は従来の SLACK_ID を使う。
-MENTION_ID  = ENV["MENTION_ID"]? || ENV["SLACK_ID"]
+# 後方互換として未設定時は従来の SLACK_ID を使い、どちらも無ければ明示的に失敗させる。
+MENTION_ID = ENV["MENTION_ID"]? || ENV["SLACK_ID"]? ||
+             raise "Missing ENV key: \"MENTION_ID\" (fallback \"SLACK_ID\" も未設定)"
 NOTIFY_MODE = ENV["NOTIFY_MODE"]? || "slack"
 APP_ENV     = ENV["ENV"]
 
