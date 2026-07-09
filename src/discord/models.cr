@@ -98,7 +98,8 @@ module Discord
 
       Embed.new(
         title: message.title.try { |value| Discord.truncate(value, TITLE_LIMIT) },
-        url: message.title_link,
+        # 空文字の URL は Discord に 400 で弾かれるため nil にする。
+        url: message.title_link.presence,
         description: description.try { |value| Discord.truncate(value, DESCRIPTION_LIMIT) },
         color: color_from_hex(message.color),
         author: Author.from_message(message),
@@ -126,7 +127,8 @@ module Discord
     def self.from_message(message : Notify::Message) : Author?
       # Discord は author に name 必須のため、名前が無ければ author 自体を付けない。
       return nil unless message.author_name
-      Author.new(message.author_name, message.author_link, message.author_icon)
+      # 空文字の URL は Discord に 400 で弾かれるため nil にする。
+      Author.new(message.author_name, message.author_link.presence, message.author_icon.presence)
     end
   end
 
@@ -142,7 +144,9 @@ module Discord
     def self.from_message(message : Notify::Message) : Footer?
       # Discord は footer に text 必須のため、footer が無ければ付けない。
       return nil unless message.footer
-      Footer.new(message.footer, message.footer_icon)
+      # 空文字の icon_url は Discord に 400 で弾かれるため nil にする
+      # （アラートは footer_icon: "" で来るため特に重要）。
+      Footer.new(message.footer, message.footer_icon.presence)
     end
   end
 end

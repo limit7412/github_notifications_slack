@@ -49,6 +49,28 @@ describe Discord::Embed do
       footer.icon_url.should eq "https://example.com/f.png"
     end
 
+    it "drops empty url / icon fields so Discord does not reject them" do
+      # アラートは footer_icon: "" で来るため、空文字は nil として出さない
+      message = Notify::Message.new(
+        author_name: "octocat",
+        author_link: "",
+        author_icon: "",
+        title_link: "",
+        footer: "github",
+        footer_icon: "",
+      )
+      embed = Discord::Embed.from_message(message)
+
+      embed.url.should be_nil
+      embed.author.as(Discord::Author).url.should be_nil
+      embed.author.as(Discord::Author).icon_url.should be_nil
+      embed.footer.as(Discord::Footer).icon_url.should be_nil
+
+      # 空文字フィールドはシリアライズされない
+      parsed = JSON.parse(embed.to_json)
+      parsed["footer"].as_h.has_key?("icon_url").should be_false
+    end
+
     it "truncates title and description to the Discord limits" do
       message = Notify::Message.new(
         title: "t" * (Discord::TITLE_LIMIT + 10),

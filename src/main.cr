@@ -19,12 +19,16 @@ NOTIFY_MODE = ENV["NOTIFY_MODE"]? || "slack"
 APP_ENV     = ENV["ENV"]
 
 # NOTIFY_MODE に応じて送信先アダプタを生成する。
+# 未設定時は既定の slack だが、想定外の値（typo 等）は起動時に例外にして
+# 設定ミスに気づけるようにする（Slack 形式を Discord webhook へ誤送しない）。
 def build_poster(url : String) : Notify::Poster
   case NOTIFY_MODE
+  when "slack"
+    Slack::PostRepository.new(url, MENTION_ID)
   when "discord"
     Discord::PostRepository.new(url, MENTION_ID)
   else
-    Slack::PostRepository.new(url, MENTION_ID)
+    raise %(Unknown NOTIFY_MODE: #{NOTIFY_MODE.inspect} (expected "slack" or "discord"))
   end
 end
 
