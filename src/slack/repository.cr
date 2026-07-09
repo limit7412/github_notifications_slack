@@ -3,10 +3,10 @@ require "uri"
 require "http/client"
 require "./models"
 require "../notify/models"
-require "../notify/poster"
+require "../notify/repository"
 
 module Slack
-  class PostRepository < Notify::Poster
+  class PostRepository < Notify::PostRepository
     def initialize(url : String, @mention_id : String)
       @uri = URI.parse url
       @client = HTTP::Client.new @uri

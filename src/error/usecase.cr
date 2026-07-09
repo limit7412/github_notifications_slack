@@ -1,9 +1,9 @@
 require "../notify/models"
-require "../notify/poster"
+require "../notify/repository"
 
 module Error
   class Usecase
-    def initialize(@poster : Notify::Poster, @env : String)
+    def initialize(@poster : Notify::PostRepository, @env : String)
     end
 
     def alert(err)

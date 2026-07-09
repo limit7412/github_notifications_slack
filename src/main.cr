@@ -2,7 +2,7 @@ require "./runtime/lambda"
 require "./github/repository"
 require "./github/usecase"
 require "./notify/usecase"
-require "./notify/poster"
+require "./notify/repository"
 require "./slack/repository"
 require "./discord/repository"
 require "./error/usecase"
@@ -21,7 +21,7 @@ APP_ENV     = ENV["ENV"]
 # NOTIFY_MODE に応じて送信先アダプタを生成する。
 # 未設定時は既定の slack だが、想定外の値（typo 等）は起動時に例外にして
 # 設定ミスに気づけるようにする（Slack 形式を Discord webhook へ誤送しない）。
-def build_poster(url : String) : Notify::Poster
+def build_poster(url : String) : Notify::PostRepository
   case NOTIFY_MODE
   when "slack"
     Slack::PostRepository.new(url, MENTION_ID)

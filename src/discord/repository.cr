@@ -3,10 +3,10 @@ require "uri"
 require "http/client"
 require "./models"
 require "../notify/models"
-require "../notify/poster"
+require "../notify/repository"
 
 module Discord
-  class PostRepository < Notify::Poster
+  class PostRepository < Notify::PostRepository
     MAX_SEND_ATTEMPTS = 3         # 送信リトライ回数の上限
     MAX_RETRY_WAIT    = 5.seconds # Retry-After の待機上限
 

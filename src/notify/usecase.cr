@@ -1,13 +1,13 @@
 require "../github/repository"
 require "../github/usecase"
-require "./poster"
+require "./repository"
 
 module Notify
   class Usecase
     def initialize(
       @github_repo : Github::NotificationRepository,
       @github_uc : Github::Usecase,
-      @poster : Notify::Poster,
+      @poster : Notify::PostRepository,
     )
     end
 
