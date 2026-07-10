@@ -1,13 +1,13 @@
 require "../github/repository"
 require "../github/usecase"
-require "../slack/repository"
+require "./repository"
 
 module Notify
   class Usecase
     def initialize(
       @github_repo : Github::NotificationRepository,
       @github_uc : Github::Usecase,
-      @slack_repo : Slack::PostRepository,
+      @poster : Notify::PostRepository,
     )
     end
 
@@ -23,11 +23,11 @@ module Notify
             end
           pretext = "[#{item.subject.type}] #{message}"
 
-          @github_uc.to_slack_attachment item, pretext, message
+          @github_uc.build_message item, pretext
         end
 
       unless notices.empty?
-        @slack_repo.send_attachments notices
+        @poster.send_messages notices
         @github_repo.notification_to_read
       end
 

@@ -9,6 +9,24 @@ describe Slack::Attachment do
     parsed["color"].should eq "#000000"
     parsed.as_h.has_key?("title").should be_false
   end
+
+  describe ".from_message" do
+    it "prefixes the pretext with a channel-wide mention when the message mentions" do
+      message = Notify::Message.new(mention: true, pretext: "hello", text: "body")
+      attachment = Slack::Attachment.from_message(message)
+
+      attachment.pretext.should eq "<!channel> hello"
+      # fallback は生の pretext を保持する
+      attachment.fallback.should eq "hello"
+    end
+
+    it "leaves the pretext untouched when the message does not mention" do
+      message = Notify::Message.new(mention: false, pretext: "hello")
+      attachment = Slack::Attachment.from_message(message)
+
+      attachment.pretext.should eq "hello"
+    end
+  end
 end
 
 describe Slack::Post do
@@ -18,5 +36,19 @@ describe Slack::Post do
 
     parsed["attachments"].as_a.size.should eq 1
     parsed["attachments"][0]["text"].should eq "a"
+  end
+
+  describe ".build" do
+    it "converts every message to an attachment" do
+      messages = [
+        Notify::Message.new(pretext: "first"),
+        Notify::Message.new(pretext: "second"),
+      ]
+      post = Slack::Post.build(messages)
+
+      post.attachments.size.should eq 2
+      post.attachments[0].pretext.should eq "first"
+      post.attachments[1].pretext.should eq "second"
+    end
   end
 end

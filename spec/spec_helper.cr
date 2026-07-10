@@ -1,3 +1,5 @@
 require "spec"
 require "../src/github/models"
+require "../src/notify/models"
 require "../src/slack/models"
+require "../src/discord/models"

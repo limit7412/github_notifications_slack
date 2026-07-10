@@ -1,20 +1,20 @@
 require "./models"
 require "./repository"
-require "../slack/models"
+require "../notify/models"
 
 module Github
   class Usecase
-    def initialize(@repo : NotificationRepository, @slack_id : String)
+    def initialize(@repo : NotificationRepository)
     end
 
-    def to_slack_attachment(notify : Notification, pretext : String, message : String) : Slack::Attachment
+    def build_message(notify : Notification, pretext : String) : Notify::Message
       comment = @repo.find_comment_by_url notify.subject.comment_url
-      Slack::Attachment.new(
-        fallback: pretext,
+      Notify::Message.new(
+        mention: notify.mention?,
         author_name: comment.user.login,
         author_icon: comment.user.avatar_url,
         author_link: comment.user.html_url,
-        pretext: "#{notify.mention? ? "<@#{@slack_id}> " : ""}#{pretext}",
+        pretext: pretext,
         color: notify.subject.color,
         title: notify.subject.title,
         title_link: comment.html_url,
