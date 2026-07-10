@@ -32,10 +32,13 @@ module Slack
     )
     end
 
-    def self.from_message(message : Notify::Message, mention_id : String) : Attachment
+    # メンション時はチャンネル全体（@channel）に通知する。
+    CHANNEL_MENTION = "<!channel>"
+
+    def self.from_message(message : Notify::Message) : Attachment
       pretext =
         if message.mention?
-          "<@#{mention_id}> #{message.pretext}"
+          "#{CHANNEL_MENTION} #{message.pretext}"
         else
           message.pretext
         end
@@ -64,8 +67,8 @@ module Slack
     def initialize(@attachments)
     end
 
-    def self.build(messages : Array(Notify::Message), mention_id : String) : Post
-      Post.new(messages.map { |message| Attachment.from_message(message, mention_id) })
+    def self.build(messages : Array(Notify::Message)) : Post
+      Post.new(messages.map { |message| Attachment.from_message(message) })
     end
   end
 end

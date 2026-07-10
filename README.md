@@ -10,7 +10,6 @@
 WEBHOOK_URL: <通知用webhook>
 ALERT_WEBHOOK_URL: <アラート用webhook>
 GITHUB_TOKEN: <token>
-MENTION_ID: <メンション先ユーザーid（Slackなら U...、Discordならユーザーid）>
 NOTIFY_MODE: <slack | discord（省略時 slack）>
 ENV: <環境名>
 ```
@@ -22,5 +21,8 @@ ENV: <環境名>
 - `slack`（既定）: `WEBHOOK_URL` / `ALERT_WEBHOOK_URL` に Slack Incoming Webhook を設定
 - `discord`: 同変数に Discord Webhook URL を設定
 
-メンション先は `MENTION_ID` で指定する。Slack と Discord で ID 体系が異なるため、
-モードに合わせた ID を設定する。後方互換として `MENTION_ID` 未設定時は `SLACK_ID` を使う。
+## メンション
+
+メンション対象の通知（mention 系 reason）とアラートは、チャンネル全体に通知する。
+Slack では `@channel`（`<!channel>`）、Discord では `@everyone` を使うため、
+ユーザー ID の設定は不要。

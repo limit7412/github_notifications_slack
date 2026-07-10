@@ -9,6 +9,9 @@ module Discord
   DESCRIPTION_LIMIT  = 4096 # embed description 最大 4096 文字
   TITLE_LIMIT        =  256 # embed title 最大 256 文字
 
+  # メンション時はチャンネル全体（@everyone）に通知する。
+  EVERYONE_MENTION = "@everyone"
+
   def self.truncate(text : String, limit : Int32) : String
     text.size > limit ? text[0, limit] : text
   end
@@ -25,7 +28,7 @@ module Discord
     # 中立メッセージ列を Discord の投稿単位へ分割して組み立てる。
     # embeds は最大 10 件、かつ 1 メッセージ内 embeds の合計文字数が 6000 を
     # 超えないよう詰め込む（超過すると Discord が 400 を返すため）。
-    def self.build(messages : Array(Notify::Message), mention_id : String) : Array(Post)
+    def self.build(messages : Array(Notify::Message)) : Array(Post)
       posts = [] of Post
       chunk = [] of Embed
       chunk_chars = 0
@@ -33,7 +36,7 @@ module Discord
 
       flush = -> do
         return if chunk.empty?
-        posts << Post.new(chunk, mention_content(mention, mention_id))
+        posts << Post.new(chunk, mention_content(mention))
         chunk = [] of Embed
         chunk_chars = 0
         mention = false
@@ -55,8 +58,8 @@ module Discord
     end
 
     # メンションは embed 内では機能しないため content に出力する。
-    private def self.mention_content(mention : Bool, mention_id : String) : String?
-      Discord.truncate("<@#{mention_id}>", CONTENT_LIMIT) if mention
+    private def self.mention_content(mention : Bool) : String?
+      EVERYONE_MENTION if mention
     end
   end
 

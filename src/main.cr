@@ -11,12 +11,8 @@ require "./error/usecase"
 GITHUB_TOKEN      = ENV["GITHUB_TOKEN"]
 WEBHOOK_URL       = ENV["WEBHOOK_URL"]
 ALERT_WEBHOOK_URL = ENV["ALERT_WEBHOOK_URL"]
-# メンション先 ID は Slack / Discord で体系が異なるため一般化する。
-# 後方互換として未設定時は従来の SLACK_ID を使い、どちらも無ければ明示的に失敗させる。
-MENTION_ID = ENV["MENTION_ID"]? || ENV["SLACK_ID"]? ||
-             raise "Missing ENV key: \"MENTION_ID\" (fallback \"SLACK_ID\" も未設定)"
-NOTIFY_MODE = ENV["NOTIFY_MODE"]? || "slack"
-APP_ENV     = ENV["ENV"]
+NOTIFY_MODE       = ENV["NOTIFY_MODE"]? || "slack"
+APP_ENV           = ENV["ENV"]
 
 # NOTIFY_MODE に応じて送信先アダプタを生成する。
 # 未設定時は既定の slack だが、想定外の値（typo 等）は起動時に例外にして
@@ -24,9 +20,9 @@ APP_ENV     = ENV["ENV"]
 def build_poster(url : String) : Notify::PostRepository
   case NOTIFY_MODE
   when "slack"
-    Slack::PostRepository.new(url, MENTION_ID)
+    Slack::PostRepository.new(url)
   when "discord"
-    Discord::PostRepository.new(url, MENTION_ID)
+    Discord::PostRepository.new(url)
   else
     raise %(Unknown NOTIFY_MODE: #{NOTIFY_MODE.inspect} (expected "slack" or "discord"))
   end

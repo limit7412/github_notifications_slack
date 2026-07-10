@@ -10,13 +10,13 @@ module Discord
     MAX_SEND_ATTEMPTS = 3         # 送信リトライ回数の上限
     MAX_RETRY_WAIT    = 5.seconds # Retry-After の待機上限
 
-    def initialize(url : String, @mention_id : String)
+    def initialize(url : String)
       @uri = URI.parse url
       @client = HTTP::Client.new @uri
     end
 
     def send_messages(messages : Array(Notify::Message))
-      Post.build(messages, @mention_id).each { |post| send_post post }
+      Post.build(messages).each { |post| send_post post }
     end
 
     private def send_post(post : Post)

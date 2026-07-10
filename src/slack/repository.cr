@@ -7,13 +7,13 @@ require "../notify/repository"
 
 module Slack
   class PostRepository < Notify::PostRepository
-    def initialize(url : String, @mention_id : String)
+    def initialize(url : String)
       @uri = URI.parse url
       @client = HTTP::Client.new @uri
     end
 
     def send_messages(messages : Array(Notify::Message))
-      send_post Post.build(messages, @mention_id)
+      send_post Post.build(messages)
     end
 
     private def send_post(post : Post)

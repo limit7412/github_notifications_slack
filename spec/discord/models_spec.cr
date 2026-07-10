@@ -96,7 +96,7 @@ describe Discord::Post do
   describe ".build" do
     it "chunks messages into posts of at most 10 embeds" do
       messages = Array.new(23) { |i| Notify::Message.new(title: "t#{i}") }
-      posts = Discord::Post.build(messages, "123")
+      posts = Discord::Post.build(messages)
 
       posts.size.should eq 3
       posts[0].embeds.size.should eq 10
@@ -108,7 +108,7 @@ describe Discord::Post do
       # 1 embed = title(2) + description(2900) = 2902 文字。
       # 2 件で 5804 ≤ 6000 は同一メッセージ、3 件目で 8706 を超えるため分割される。
       messages = Array.new(3) { |i| Notify::Message.new(title: "t#{i}", text: "d" * 2900) }
-      posts = Discord::Post.build(messages, "123")
+      posts = Discord::Post.build(messages)
 
       posts.size.should eq 2
       posts[0].embeds.size.should eq 2
@@ -118,25 +118,25 @@ describe Discord::Post do
       end
     end
 
-    it "sets a mention in content when any message in a chunk mentions" do
+    it "sets a channel-wide mention in content when any message in a chunk mentions" do
       messages = [
         Notify::Message.new(title: "a"),
         Notify::Message.new(title: "b", mention: true),
       ]
-      posts = Discord::Post.build(messages, "123")
+      posts = Discord::Post.build(messages)
 
       posts.size.should eq 1
-      posts[0].content.should eq "<@123>"
+      posts[0].content.should eq "@everyone"
     end
 
     it "leaves content unset when no message mentions" do
-      posts = Discord::Post.build([Notify::Message.new(title: "a")], "123")
+      posts = Discord::Post.build([Notify::Message.new(title: "a")])
 
       posts[0].content.should be_nil
     end
 
     it "serializes embeds under an embeds key" do
-      parsed = JSON.parse(Discord::Post.build([Notify::Message.new(title: "a")], "123")[0].to_json)
+      parsed = JSON.parse(Discord::Post.build([Notify::Message.new(title: "a")])[0].to_json)
 
       parsed["embeds"].as_a.size.should eq 1
       parsed["embeds"][0]["title"].should eq "a"
