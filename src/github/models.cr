@@ -96,6 +96,22 @@ module Github
       Type::DISCUSSION,
     }
 
+    # subject.url 末尾が GitHub 上の番号として意味を持つ type。Release / CheckSuite
+    # のように末尾が数値 ID でも #番号 表示は誤解を招くため、これらに限定する。
+    NUMBERED_TYPES = {
+      Type::PULL_REQUEST,
+      Type::ISSUE,
+      Type::DISCUSSION,
+    }
+
+    # subject.url / latest_comment_url を取得すると本文（body）付きのオブジェクトが
+    # 返る type。Commit / CheckSuite 等は body が無くコメントとして解釈できないため、
+    # コメント URL が無ければ本文取得の対象にしない（CI 完了通知等に本文を付けない）。
+    BODY_TYPES = {
+      Type::PULL_REQUEST,
+      Type::ISSUE,
+    }
+
     def update? : Bool
       type.in?(UPDATE_TYPES)
     end
@@ -115,14 +131,20 @@ module Github
       end
     end
 
+    # 本文取得に使う URL。コメントがあればその URL、無ければ本文を持つ type に
+    # 限り subject.url にフォールバックする。対象外（CI 等）は空文字を返し、
+    # 呼び出し側で本文なし扱いにする（issue #96）。
     def comment_url : String
-      latest_comment_url.presence || url
+      return latest_comment_url if latest_comment_url.presence
+      type.in?(BODY_TYPES) ? url : ""
     end
 
-    # subject.url 末尾の PR / Issue / Discussion 番号。Commit（末尾が SHA）や
-    # URL が無い場合など、数値でなければ nil を返す（issue #96）。
+    # subject.url 末尾の PR / Issue / Discussion 番号。番号が意味を持つ type に
+    # 限り、末尾セグメントが数値なら返す。Commit（末尾が SHA）や末尾スラッシュ、
+    # URL が無い場合などは nil を返す（issue #96）。
     def number : String?
-      segment = url.split('/').last?
+      return nil unless type.in?(NUMBERED_TYPES)
+      segment = url.chomp('/').split('/').last?
       segment if segment && segment.matches?(/\A\d+\z/)
     end
   end

@@ -92,7 +92,16 @@ module Github
         return Comment.new nil
       end
 
-      res = @github.get url
+      res =
+        begin
+          @github.get url
+        rescue ex
+          # ネットワークエラー等で 1 件のコメント取得に失敗しても、他の通知の
+          # 送信まで巻き添えにしないよう、例外にせず表示用文言で握りつぶす。
+          Serverless::Lambda.print_log "failed to get comment from api: #{ex.message}"
+          return Comment.new COMMENT_FETCH_FAILED
+        end
+
       if res.status.server_error?
         Serverless::Lambda.print_log "return 5xx error from comments api"
         return Comment.new COMMENT_FETCH_FAILED

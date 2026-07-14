@@ -46,9 +46,18 @@ describe Github::Subject do
       subject.comment_url.should eq "c"
     end
 
-    it "falls back to url when latest_comment_url is blank" do
+    it "falls back to url for body-bearing types when latest_comment_url is blank" do
       subject = subject_from("Issue", url: "u", latest_comment_url: "")
       subject.comment_url.should eq "u"
+    end
+
+    it "returns empty for types without a comment body when no comment url is present" do
+      # CI 完了通知（CheckSuite）などは subject.url を本文取得に使わない
+      subject_from("CheckSuite", url: "https://api.github.com/repos/o/r/check-suites/1").comment_url.should eq ""
+    end
+
+    it "still uses latest_comment_url even for non-body types" do
+      subject_from("Commit", url: "u", latest_comment_url: "c").comment_url.should eq "c"
     end
   end
 
@@ -57,8 +66,17 @@ describe Github::Subject do
       subject_from("Issue", url: "https://api.github.com/repos/o/r/issues/42").number.should eq "42"
     end
 
+    it "tolerates a trailing slash" do
+      subject_from("Issue", url: "https://api.github.com/repos/o/r/issues/42/").number.should eq "42"
+    end
+
     it "returns nil when the trailing segment is not numeric (e.g. a commit SHA)" do
       subject_from("Commit", url: "https://api.github.com/repos/o/r/commits/abc123").number.should be_nil
+    end
+
+    it "returns nil for types whose trailing number is not a GitHub issue/PR number" do
+      # Release は末尾が数値 ID でも #番号 表示は誤解を招くため付けない
+      subject_from("Release", url: "https://api.github.com/repos/o/r/releases/5").number.should be_nil
     end
 
     it "returns nil when the url is blank" do
