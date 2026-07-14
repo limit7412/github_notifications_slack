@@ -15,8 +15,16 @@ module Discord
       @client = HTTP::Client.new @uri
     end
 
-    def send_messages(messages : Array(Notify::Message))
-      Post.build(messages).each { |post| send_post post }
+    def send_messages(messages : Array(Notify::Message), & : Int32 ->)
+      # 通知は複数の webhook 投稿（チャンク）に分割されうる。1 投稿につき
+      # embed は 1 メッセージなので、投稿成功ごとに累計送信件数を yield し、
+      # 呼び出し側が送信済み分だけを既読化できるようにする（issue #94）。
+      sent = 0
+      Post.build(messages).each do |post|
+        send_post post
+        sent += post.embeds.size
+        yield sent
+      end
     end
 
     private def send_post(post : Post)

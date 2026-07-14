@@ -77,6 +77,7 @@ describe Github::Notification do
     notification.subject.title.should eq "Spurious failure"
     notification.repository.full_name.should eq "octocat/Hello-World"
     notification.mention?.should be_true
+    notification.updated_at.should eq Time.utc(2026, 7, 14, 0, 0, 0)
   end
 end
 
@@ -85,6 +86,7 @@ private def notification_from(reason : String)
     reason:     reason,
     subject:    {type: "Issue", title: "title"},
     repository: {owner: {login: "octocat"}},
+    updated_at: "2026-07-14T00:00:00Z",
   }.to_json)
 end
 
@@ -98,6 +100,7 @@ NOTIFICATIONS_FIXTURE = <<-JSON
       "latest_comment_url": "https://api.github.com/repos/octocat/Hello-World/issues/comments/1",
       "type": "Issue"
     },
+    "updated_at": "2026-07-14T00:00:00Z",
     "repository": {
       "full_name": "octocat/Hello-World",
       "html_url": "https://github.com/octocat/Hello-World",
