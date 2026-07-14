@@ -15,6 +15,25 @@ module Github
       # "ci_activity",
     }
 
+    # reason（なぜ自分に通知されたか）ごとの表示文言。update? による
+    # 「更新があったみたいです」一辺倒だと通知理由が伝わらないため、reason を
+    # 文面に反映する（issue #96）。GitHub 側の reason 追加に耐えるよう、
+    # 未知の reason は reason_message で汎用文言にフォールバックする。
+    REASON_MESSAGES = {
+      "mention"          => "メンションされました",
+      "team_mention"     => "メンションされました",
+      "review_requested" => "レビューを依頼されました",
+      "assign"           => "アサインされました",
+      "author"           => "自分の PR/Issue に動きがありました",
+      "comment"          => "コメントがつきました",
+      "state_change"     => "状態が変わりました",
+      "subscribed"       => "ウォッチ中のリポジトリで動きがありました",
+      "ci_activity"      => "CI の実行結果が届きました",
+      "invitation"       => "招待が届きました",
+    }
+
+    GENERIC_MESSAGE = "なにかあったみたいです。確認してみましょう！"
+
     getter subject : Subject
     getter reason : String
     getter repository : Repository
@@ -25,6 +44,33 @@ module Github
 
     def mention? : Bool
       reason.in?(MENTION_REASONS)
+    end
+
+    def reason_message : String
+      REASON_MESSAGES[reason]? || GENERIC_MESSAGE
+    end
+
+    # 通知の pretext（botのセリフ）。`[<type>] <reason 文言>` 形式。
+    def pretext : String
+      "[#{subject.type}] #{reason_message}"
+    end
+
+    # 一目で対象が分かるよう `owner/repo#番号 タイトル` 形式にする。
+    # 番号が取れない（Commit など）場合はタイトルのみ、リポジトリ名が無ければ
+    # 番号のみにフォールバックする（issue #96）。
+    def display_title : String?
+      title = subject.title
+      number = subject.number
+      return title unless number
+
+      prefix = repository.full_name.try { |name| "#{name}##{number}" } || "##{number}"
+      title ? "#{prefix} #{title}" : prefix
+    end
+
+    # 対象へ飛べるリンク。コメントの html_url を優先し、無ければリポジトリの
+    # html_url にフォールバックしてリンク無し通知を無くす（issue #96）。
+    def link(comment : Comment) : String?
+      comment.html_url.try(&.presence) || repository.html_url
     end
   end
 
@@ -50,6 +96,22 @@ module Github
       Type::DISCUSSION,
     }
 
+    # subject.url 末尾が GitHub 上の番号として意味を持つ type。Release / CheckSuite
+    # のように末尾が数値 ID でも #番号 表示は誤解を招くため、これらに限定する。
+    NUMBERED_TYPES = {
+      Type::PULL_REQUEST,
+      Type::ISSUE,
+      Type::DISCUSSION,
+    }
+
+    # subject.url / latest_comment_url を取得すると本文（body）付きのオブジェクトが
+    # 返る type。Commit / CheckSuite 等は body が無くコメントとして解釈できないため、
+    # コメント URL が無ければ本文取得の対象にしない（CI 完了通知等に本文を付けない）。
+    BODY_TYPES = {
+      Type::PULL_REQUEST,
+      Type::ISSUE,
+    }
+
     def update? : Bool
       type.in?(UPDATE_TYPES)
     end
@@ -69,8 +131,21 @@ module Github
       end
     end
 
+    # 本文取得に使う URL。コメントがあればその URL、無ければ本文を持つ type に
+    # 限り subject.url にフォールバックする。対象外（CI 等）は空文字を返し、
+    # 呼び出し側で本文なし扱いにする（issue #96）。
     def comment_url : String
-      latest_comment_url.presence || url
+      return latest_comment_url if latest_comment_url.presence
+      type.in?(BODY_TYPES) ? url : ""
+    end
+
+    # subject.url 末尾の PR / Issue / Discussion 番号。番号が意味を持つ type に
+    # 限り、末尾セグメントが数値なら返す。Commit（末尾が SHA）や末尾スラッシュ、
+    # URL が無い場合などは nil を返す（issue #96）。
+    def number : String?
+      return nil unless type.in?(NUMBERED_TYPES)
+      segment = url.chomp('/').split('/').last?
+      segment if segment && segment.matches?(/\A\d+\z/)
     end
   end
 

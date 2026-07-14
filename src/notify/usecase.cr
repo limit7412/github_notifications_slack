@@ -20,17 +20,8 @@ module Notify
 
       return {msg: "ok"} if notifications.empty?
 
-      notices = notifications.map do |item|
-        message =
-          if item.subject.update?
-            "更新があったみたいです。確認してみましょう！"
-          else
-            "なにかあったみたいです。確認してみましょう！"
-          end
-        pretext = "[#{item.subject.type}] #{message}"
-
-        @github_uc.build_message item, pretext
-      end
+      # pretext は reason（なぜ通知されたか）を反映した文言になる（issue #96）。
+      notices = notifications.map { |item| @github_uc.build_message item }
 
       # チャンク送信が成功するたび、そこまでに送信済みの通知だけを既読化する。
       # 途中で失敗しても送信済み分は既読化済みなので、未送信分だけが次回
