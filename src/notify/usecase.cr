@@ -51,6 +51,9 @@ module Notify
     private def mark_read_through(notifications : Array(Github::Notification), sent_count : Int32)
       return if sent_count <= 0
 
+      # sent_count は poster 実装（外部境界）から渡るため、通知件数で丸めて
+      # 想定外の値でも安全にスライスできるようにする。
+      sent_count = {sent_count, notifications.size}.min
       sent = notifications[0, sent_count]
       next_unsent = notifications[sent_count]?
 

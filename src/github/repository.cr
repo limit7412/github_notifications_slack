@@ -67,8 +67,11 @@ module Github
     # 省略時は現在時刻までの全通知を既読化する。
     def notification_to_read(last_read_at : Time? = nil)
       if last_read_at
+        # JSON ボディを送るため Content-Type を明示する。無いと GitHub 側で
+        # ボディが解析されず last_read_at が無視される恐れがある。
+        headers = HTTP::Headers{"Content-Type" => "application/json"}
         body = {last_read_at: last_read_at.to_utc}.to_json
-        @github.put "/notifications", body: body
+        @github.put "/notifications", headers: headers, body: body
       else
         @github.put "/notifications"
       end
