@@ -30,6 +30,9 @@ end
 
 # 依存はコールドスタート時に一度だけ生成し、ウォームスタート間で使い回すことで
 # HTTP::Client のコネクション（TCP/SSL）を再利用する。
+# ただし GitHub への接続は、古いレプリカへの固定で未読通知が長時間取得できなく
+# なる事象があったため、実行ごとに張り直す（issue #102 /
+# Github::NotificationRepository#find_notifications_unread 参照）。
 github_repo = Github::NotificationRepository.new GITHUB_TOKEN
 notify_uc = Notify::Usecase.new(
   github_repo,

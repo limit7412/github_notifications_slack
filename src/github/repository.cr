@@ -37,6 +37,16 @@ module Github
     # 不完全な取得状態で既読化して取りこぼすのを避けるため、その実行を丸ごと
     # スキップして次回に委ねる。
     def find_notifications_unread(before : Time) : Array(Notification)
+      # ウォームスタート間で使い回した keep-alive 接続が GitHub 側の古い
+      # レプリカに固定され、未読があるのに空応答が約47分続く事象を観測した
+      # （issue #102）。実行のたびに接続を張り直して固定を解き、古い応答を
+      # 読み続ける時間を最長でも1実行間隔（1分）に抑える。同一実行内の
+      # ページング・コメント取得・既読化ではそのまま再利用される
+      # （close 後の接続は次のリクエストで自動的に張り直される）。
+      # TLS ハンドシェイクが毎実行1回増えるが、毎分・数百 ms の処理なので
+      # 通知が長時間届かないリスクより軽いと判断した。
+      @github.close
+
       notifications = [] of Notification
       complete = false
 
