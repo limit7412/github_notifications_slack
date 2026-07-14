@@ -19,6 +19,9 @@ module Github
     getter reason : String
     getter repository : Repository
     getter subscription_url : String?
+    # 分割送信時にチャンク単位で既読化するため、通知の更新時刻を保持する。
+    # last_read_at に渡すことで送信済み分だけを既読化できる（issue #94）。
+    getter updated_at : Time
 
     def mention? : Bool
       reason.in?(MENTION_REASONS)

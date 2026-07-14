@@ -61,8 +61,17 @@ module Github
       end
     end
 
-    def notification_to_read
-      @github.put "/notifications"
+    # 通知を既読化する。last_read_at を渡すと、その時刻以前に更新された通知
+    # だけを既読化する（それ以降に更新された通知は未読のまま残る）。分割送信で
+    # 送信済みチャンクまでを都度既読化し、途中失敗時の重複投稿を防ぐのに使う。
+    # 省略時は現在時刻までの全通知を既読化する。
+    def notification_to_read(last_read_at : Time? = nil)
+      if last_read_at
+        body = {last_read_at: last_read_at.to_utc}.to_json
+        @github.put "/notifications", body: body
+      else
+        @github.put "/notifications"
+      end
     end
   end
 end
