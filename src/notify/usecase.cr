@@ -15,7 +15,10 @@ module Notify
       # 取得スナップショット。取得フィルタ（before）と全件送信後の既読化境界
       # （last_read_at）に同じ値を使うことで、取得・送信した集合と既読化される
       # 集合を一致させる（issue #100）。
-      fetched_at = Time.utc
+      # 秒に切り詰めるのは、両者の一致をシリアライズ精度（現状はどちらも秒単位の
+      # RFC 3339）に依存させないため。サブセカンドの解釈差による取りこぼしを
+      # 構造的に防ぐ。
+      fetched_at = Time.utc.at_beginning_of_second
 
       # updated_at 昇順にソートしてから送信することで、送信済み分を
       # last_read_at で都度既読化できるようにする（issue #94）。
