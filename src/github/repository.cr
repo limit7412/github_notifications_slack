@@ -81,20 +81,24 @@ module Github
       notifications
     end
 
+    # コメント取得に失敗した場合に本文へ出す表示用文言。内部エラー文字列を
+    # 通知に晒さず、詳細はログのみに残す（issue #96）。
+    COMMENT_FETCH_FAILED = "（本文を取得できませんでした）"
+
     def find_comment_by_url(url : String) : Comment
       Serverless::Lambda.print_log "comment url: #{url}"
+      # コメントが無い通知（CI 完了など）。本文は付けず title / リンクで対象を示す。
       if url.blank?
-        return Comment.new "no comments exist"
+        return Comment.new nil
       end
 
       res = @github.get url
       if res.status.server_error?
         Serverless::Lambda.print_log "return 5xx error from comments api"
-        return Comment.new "comments api return server error"
+        return Comment.new COMMENT_FETCH_FAILED
       elsif res.status.client_error?
-        Serverless::Lambda.print_log "return 4xx error from comments api"
-        err = Error.from_json res.body
-        return Comment.new "comments api return client error: #{err.message}"
+        Serverless::Lambda.print_log "return 4xx error from comments api: #{res.body}"
+        return Comment.new COMMENT_FETCH_FAILED
       end
 
       begin
@@ -102,7 +106,7 @@ module Github
         Comment.from_json res.body
       rescue
         Serverless::Lambda.print_log "failed parse comment data"
-        Comment.new "failed parse comment data"
+        Comment.new COMMENT_FETCH_FAILED
       end
     end
 

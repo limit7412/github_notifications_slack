@@ -51,6 +51,20 @@ describe Github::Subject do
       subject.comment_url.should eq "u"
     end
   end
+
+  describe "#number" do
+    it "extracts a trailing issue/PR number from the url" do
+      subject_from("Issue", url: "https://api.github.com/repos/o/r/issues/42").number.should eq "42"
+    end
+
+    it "returns nil when the trailing segment is not numeric (e.g. a commit SHA)" do
+      subject_from("Commit", url: "https://api.github.com/repos/o/r/commits/abc123").number.should be_nil
+    end
+
+    it "returns nil when the url is blank" do
+      subject_from("Issue").number.should be_nil
+    end
+  end
 end
 
 describe Github::Notification do
@@ -64,6 +78,48 @@ describe Github::Notification do
     it "is false for non-mention reasons" do
       notification_from("subscribed").mention?.should be_false
       notification_from("ci_activity").mention?.should be_false
+    end
+  end
+
+  describe "#reason_message" do
+    it "returns a reason-specific message for known reasons" do
+      notification_from("review_requested").reason_message.should eq "レビューを依頼されました"
+      notification_from("assign").reason_message.should eq "アサインされました"
+      notification_from("comment").reason_message.should eq "コメントがつきました"
+    end
+
+    it "falls back to a generic message for unknown reasons" do
+      notification_from("some_future_reason").reason_message.should eq Github::Notification::GENERIC_MESSAGE
+    end
+  end
+
+  describe "#pretext" do
+    it "prefixes the subject type before the reason message" do
+      notification_from("mention").pretext.should eq "[Issue] メンションされました"
+    end
+  end
+
+  describe "#display_title" do
+    it "formats as owner/repo#number title when a number is present" do
+      notification = notification_with(url: "https://api.github.com/repos/octocat/Hello-World/issues/42")
+      notification.display_title.should eq "octocat/Hello-World#42 title"
+    end
+
+    it "falls back to the bare title when no number is present" do
+      notification_with(url: "").display_title.should eq "title"
+    end
+  end
+
+  describe "#link" do
+    it "prefers the comment html_url" do
+      comment = Github::Comment.from_json({html_url: "https://example.com/c", user: {} of String => String}.to_json)
+      notification_with.link(comment).should eq "https://example.com/c"
+    end
+
+    it "falls back to the repository html_url when the comment has no link" do
+      comment = Github::Comment.new nil
+      notification = notification_with(repo_html_url: "https://github.com/octocat/Hello-World")
+      notification.link(comment).should eq "https://github.com/octocat/Hello-World"
     end
   end
 
@@ -86,6 +142,15 @@ private def notification_from(reason : String)
     reason:     reason,
     subject:    {type: "Issue", title: "title"},
     repository: {owner: {login: "octocat"}},
+    updated_at: "2026-07-14T00:00:00Z",
+  }.to_json)
+end
+
+private def notification_with(url = "", repo_html_url : String? = nil)
+  Github::Notification.from_json({
+    reason:     "subscribed",
+    subject:    {type: "Issue", title: "title", url: url},
+    repository: {full_name: "octocat/Hello-World", html_url: repo_html_url, owner: {login: "octocat"}},
     updated_at: "2026-07-14T00:00:00Z",
   }.to_json)
 end
