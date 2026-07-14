@@ -4,6 +4,7 @@ require "http/client"
 require "./models"
 require "../notify/models"
 require "../notify/repository"
+require "../runtime/lambda"
 
 module Discord
   class PostRepository < Notify::PostRepository
@@ -29,6 +30,9 @@ module Discord
 
     private def send_post(post : Post)
       body = post.to_json
+      # 送信ペイロードを記録し、content（セリフ）や description / footer が意図通りか
+      # CloudWatch で確認できるようにする（issue #95 の切り分け用）。
+      Serverless::Lambda.print_log "discord payload: #{body}"
       headers = HTTP::Headers{"Content-Type" => "application/json"}
 
       attempt = 0
