@@ -15,11 +15,17 @@ describe Discord::Embed do
   end
 
   describe ".from_message" do
-    it "merges pretext and text into the description" do
+    it "uses only the comment body as the description (pretext goes to content)" do
       message = Notify::Message.new(pretext: "pre", text: "body")
       embed = Discord::Embed.from_message(message)
 
-      embed.description.should eq "pre\n\nbody"
+      embed.description.should eq "body"
+    end
+
+    it "leaves description unset when there is no comment body" do
+      embed = Discord::Embed.from_message(Notify::Message.new(pretext: "pre"))
+
+      embed.description.should be_nil
     end
 
     it "drops author and footer when their required fields are absent" do
@@ -133,6 +139,39 @@ describe Discord::Post do
       posts = Discord::Post.build([Notify::Message.new(title: "a")])
 
       posts[0].content.should be_nil
+    end
+
+    it "outputs the bot serif (pretext) as content" do
+      posts = Discord::Post.build([Notify::Message.new(title: "a", pretext: "[Issue] hi")])
+
+      posts[0].content.should eq "[Issue] hi"
+    end
+
+    it "prepends the channel-wide mention before the serif" do
+      posts = Discord::Post.build([Notify::Message.new(title: "a", pretext: "[Issue] hi", mention: true)])
+
+      posts[0].content.should eq "@everyone\n[Issue] hi"
+    end
+
+    it "de-duplicates repeated serifs within a chunk while keeping order" do
+      messages = [
+        Notify::Message.new(title: "a", pretext: "[Issue] hi"),
+        Notify::Message.new(title: "b", pretext: "[Issue] hi"),
+        Notify::Message.new(title: "c", pretext: "[PullRequest] yo"),
+      ]
+      posts = Discord::Post.build(messages)
+
+      posts.size.should eq 1
+      posts[0].content.should eq "[Issue] hi\n[PullRequest] yo"
+    end
+
+    it "truncates content to the Discord content limit" do
+      # 各セリフを異なる内容にして uniq でまとまらないようにする。
+      messages = Array.new(3) { |i| Notify::Message.new(title: "t#{i}", pretext: "#{i}#{"p" * 900}") }
+      posts = Discord::Post.build(messages)
+
+      posts.size.should eq 1
+      posts[0].content.as(String).size.should eq Discord::CONTENT_LIMIT
     end
 
     it "serializes embeds under an embeds key" do

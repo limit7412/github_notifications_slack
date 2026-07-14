@@ -31,13 +31,15 @@ module Discord
     def self.build(messages : Array(Notify::Message)) : Array(Post)
       posts = [] of Post
       chunk = [] of Embed
+      pretexts = [] of String
       chunk_chars = 0
       mention = false
 
       flush = -> do
         return if chunk.empty?
-        posts << Post.new(chunk, mention_content(mention))
+        posts << Post.new(chunk, build_content(pretexts, mention))
         chunk = [] of Embed
+        pretexts = [] of String
         chunk_chars = 0
         mention = false
       end
@@ -50,6 +52,9 @@ module Discord
         end
         chunk << embed
         chunk_chars += size
+        if pretext = message.pretext.try(&.presence)
+          pretexts << pretext
+        end
         mention = true if message.mention?
       end
       flush.call
@@ -57,9 +62,17 @@ module Discord
       posts
     end
 
-    # メンションは embed 内では機能しないため content に出力する。
-    private def self.mention_content(mention : Bool) : String?
-      EVERYONE_MENTION if mention
+    # botのセリフ（pretext）を content に出力する。embed には pretext 相当の欄が
+    # 無いため、Slack と同様に「botの発言行」として embed の外（content）へ出す
+    # （issue #95）。メンションは embed 内では機能しないため content 先頭に
+    # @everyone を添える。チャンク内で重複するセリフは uniq でまとめ、content は
+    # 2000 文字上限があるため truncate する。
+    private def self.build_content(pretexts : Array(String), mention : Bool) : String?
+      lines = [] of String
+      lines << EVERYONE_MENTION if mention
+      lines.concat pretexts.uniq
+      return nil if lines.empty?
+      Discord.truncate(lines.join("\n"), CONTENT_LIMIT)
     end
   end
 
@@ -92,12 +105,9 @@ module Discord
     end
 
     def self.from_message(message : Notify::Message) : Embed
-      # Slack の pretext 相当の欄が embed には無いため text とまとめて description にする。
-      description = [message.pretext, message.text]
-        .compact
-        .reject(&.empty?)
-        .join("\n\n")
-        .presence
+      # pretext（botのセリフ）は Post の content 側に出すため、description には
+      # 含めずコメント本文のみとする（二重表示を避ける / issue #95）。
+      description = message.text.try(&.presence)
 
       Embed.new(
         title: message.title.try { |value| Discord.truncate(value, TITLE_LIMIT) },
