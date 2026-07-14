@@ -26,15 +26,18 @@ module Github
     # 取得してから境界を決める必要がある（issue #94 / PR #97 レビュー指摘）。
     #
     # ページング中に新着通知が入るとオフセットがずれ前ページ末尾の取りこぼしが
-    # 起きるため、取得開始時刻を上限（before）に固定してページ集合を安定させる。
-    # 上限より新しい通知は取得対象から外れるが、次回実行で取得される。
+    # 起きるため、スナップショット時刻を上限（before）に固定してページ集合を
+    # 安定させる。上限より新しい通知は取得対象から外れるが、次回実行で取得される。
+    # before は呼び出し側から受け取る。全件送信後の既読化境界（last_read_at）に
+    # 同じ値を使うことで、取得フィルタ（updated < before）と既読化（updated <
+    # last_read_at）が同じ排他的比較になり、「取得・送信した集合」と「既読化される
+    # 集合」を一致させられる（issue #100）。
     #
     # 取得しきれない場合（途中ページの一時失敗 5xx/401、またはページ数上限到達）は、
     # 不完全な取得状態で既読化して取りこぼすのを避けるため、その実行を丸ごと
     # スキップして次回に委ねる。
-    def find_notifications_unread : Array(Notification)
+    def find_notifications_unread(before : Time) : Array(Notification)
       notifications = [] of Notification
-      before = Time.utc
       complete = false
 
       (1..MAX_PAGES).each do |page|
@@ -119,10 +122,13 @@ module Github
       end
     end
 
-    # 通知を既読化する。last_read_at を渡すと、その時刻以前に更新された通知
-    # だけを既読化する（それ以降に更新された通知は未読のまま残る）。分割送信で
-    # 送信済みチャンクまでを都度既読化し、途中失敗時の重複投稿を防ぐのに使う。
-    # 省略時は現在時刻までの全通知を既読化する。
+    # 通知を既読化する。last_read_at は排他的境界で、その時刻より前
+    # （updated_at < last_read_at）に更新された通知だけが既読化される。
+    # 等値（updated_at == last_read_at）は未読のまま残るため、送信済み通知を
+    # 含めたい場合は境界をその updated_at より大きく取ること（issue #100 で
+    # 実 API 検証済み）。分割送信で送信済みチャンクまでを都度既読化し、
+    # 途中失敗時の重複投稿を防ぐのに使う。省略時は現在時刻までの全通知を
+    # 既読化する。
     def notification_to_read(last_read_at : Time? = nil)
       res =
         if last_read_at
