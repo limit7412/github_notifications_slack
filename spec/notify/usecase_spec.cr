@@ -22,7 +22,8 @@ end
 private class FakeNotificationRepo < Github::NotificationRepository
   getter read_calls = [] of Time?
 
-  def initialize(@notifications : Array(Github::Notification))
+  # raise_read_after 回目の既読化呼び出しで例外を投げ、既読化失敗を再現する。
+  def initialize(@notifications : Array(Github::Notification), @raise_read_after : Int32? = nil)
     super("token")
   end
 
@@ -36,12 +37,17 @@ private class FakeNotificationRepo < Github::NotificationRepository
 
   def notification_to_read(last_read_at : Time? = nil)
     @read_calls << last_read_at
+    if (limit = @raise_read_after) && @read_calls.size >= limit
+      raise "read failed"
+    end
   end
 end
 
 # chunk_sizes で指定した件数ごとに送信成功を模し、累計件数を yield する。
 # fail_at 番目（0 始まり）のチャンク送信で例外を投げて途中失敗を再現する。
 private class ChunkPoster < Notify::PostRepository
+  getter sent_chunks = 0
+
   def initialize(@chunk_sizes : Array(Int32), @fail_at : Int32? = nil)
   end
 
@@ -50,6 +56,7 @@ private class ChunkPoster < Notify::PostRepository
     @chunk_sizes.each_with_index do |size, i|
       raise "send failed" if @fail_at == i
       sent += size
+      @sent_chunks += 1
       yield sent
     end
   end
@@ -97,6 +104,19 @@ describe Notify::Usecase do
         usecase.check_notifications
       end
       read_calls.should be_empty
+    end
+
+    it "既読化に失敗したら後続チャンクの送信を止める" do
+      notifications = [notif("2026-01-01T00:00:01Z"), notif("2026-01-01T00:00:02Z"), notif("2026-01-01T00:00:03Z")]
+      poster = ChunkPoster.new([1, 1, 1])
+      # 2 回目の既読化で失敗させる。
+      repo = FakeNotificationRepo.new notifications, raise_read_after: 2
+      usecase = Notify::Usecase.new repo, Github::Usecase.new(repo), poster
+
+      expect_raises(Exception, "read failed") { usecase.check_notifications }
+
+      # 2 チャンク送信後の既読化で失敗 → 3 チャンク目は送信されない。
+      poster.sent_chunks.should eq 2
     end
   end
 end
