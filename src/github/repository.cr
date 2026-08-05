@@ -154,7 +154,7 @@ module Github
     end
 
     private def find_head_sha(path : String) : String?
-      return nil unless body = get_body path
+      return unless body = get_body path
 
       begin
         PullRequest.from_json(body).head.sha.presence
@@ -194,12 +194,12 @@ module Github
           @github.get path
         rescue ex
           Serverless::Lambda.print_log "failed to get #{path}: #{ex.message}"
-          return nil
+          return
         end
 
       unless res.success?
         Serverless::Lambda.print_log "return #{res.status_code} from #{path}"
-        return nil
+        return
       end
 
       res.body
