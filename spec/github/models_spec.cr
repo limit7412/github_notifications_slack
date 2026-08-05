@@ -282,26 +282,26 @@ private def combined_status_from(state : String, total_count : Int32)
 end
 
 NOTIFICATIONS_FIXTURE = <<-JSON
-[
-  {
-    "reason": "mention",
-    "subject": {
-      "title": "Spurious failure",
-      "url": "https://api.github.com/repos/octocat/Hello-World/issues/1",
-      "latest_comment_url": "https://api.github.com/repos/octocat/Hello-World/issues/comments/1",
-      "type": "Issue"
-    },
-    "updated_at": "2026-07-14T00:00:00Z",
-    "repository": {
-      "full_name": "octocat/Hello-World",
-      "html_url": "https://github.com/octocat/Hello-World",
-      "owner": {
-        "login": "octocat",
-        "avatar_url": "https://github.com/images/error/octocat.gif",
-        "html_url": "https://github.com/octocat"
-      }
-    },
-    "subscription_url": "https://api.github.com/notifications/threads/1/subscription"
-  }
-]
-JSON
+  [
+    {
+      "reason": "mention",
+      "subject": {
+        "title": "Spurious failure",
+        "url": "https://api.github.com/repos/octocat/Hello-World/issues/1",
+        "latest_comment_url": "https://api.github.com/repos/octocat/Hello-World/issues/comments/1",
+        "type": "Issue"
+      },
+      "updated_at": "2026-07-14T00:00:00Z",
+      "repository": {
+        "full_name": "octocat/Hello-World",
+        "html_url": "https://github.com/octocat/Hello-World",
+        "owner": {
+          "login": "octocat",
+          "avatar_url": "https://github.com/images/error/octocat.gif",
+          "html_url": "https://github.com/octocat"
+        }
+      },
+      "subscription_url": "https://api.github.com/notifications/threads/1/subscription"
+    }
+  ]
+  JSON

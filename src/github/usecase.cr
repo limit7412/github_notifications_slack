@@ -41,7 +41,7 @@ module Github
     end
 
     private def truncate_body(body : String?) : String?
-      return nil unless text = body.try(&.presence)
+      return unless text = body.try(&.presence)
       text.size > BODY_LIMIT ? "#{text[0, BODY_LIMIT]}…" : text
     end
   end
