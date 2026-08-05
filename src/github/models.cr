@@ -1,6 +1,35 @@
 require "json"
 
 module Github
+  # PR の CI・自動チェックの集計状態（issue #105）。
+  # check runs（GitHub Actions 等）と commit status の 2 系統をまとめて表す。
+  enum ChecksState
+    Success  # 全て完了し、ブロックする結果が無い
+    Pending  # 未完了のチェックがある
+    Failure  # 失敗したチェックがある
+    NoChecks # チェックが 1 つも設定されていない
+    Unknown  # 取得できなかった
+
+    # 2 系統の結果を 1 つに畳む。厳しい方（Failure > Pending > Success >
+    # NoChecks）を採る。Unknown は「情報が無い」だけなので、もう片方が
+    # 取得できていればそちらの結果を活かす。
+    def merge(other : ChecksState) : ChecksState
+      return other if unknown?
+      return self if other.unknown?
+      return Failure if failure? || other.failure?
+      return Pending if pending? || other.pending?
+      return Success if success? || other.success?
+      NoChecks
+    end
+
+    # メンションを抑止すべき状態か。
+    # 成功・チェック未設定・取得失敗ではメンションする。取得できなかった場合に
+    # 抑止すると通知の見逃しにつながるため、安全側（誤メンションを許容）に倒す。
+    def blocks_mention? : Bool
+      failure? || pending?
+    end
+  end
+
   class Notification
     include JSON::Serializable
 
@@ -34,6 +63,14 @@ module Github
 
     GENERIC_MESSAGE = "なにかあったみたいです。確認してみましょう！"
 
+    # 人が明示的に呼んだことを表す reason。CI の状態に関わらずメンションする
+    # （呼ばれている以上、チェックの成否とは無関係に見てほしいはずなので
+    # 抑止しない / issue #105）。
+    HUMAN_MENTION_REASONS = {
+      "mention",
+      "team_mention",
+    }
+
     getter subject : Subject
     getter reason : String
     getter repository : Repository
@@ -48,6 +85,14 @@ module Github
 
     def reason_message : String
       REASON_MESSAGES[reason]? || GENERIC_MESSAGE
+    end
+
+    # CI・自動チェックの状態でメンションを抑止する対象か（issue #105）。
+    # レビューできる状態になっていない PR で `@channel` / `@everyone` を撃たない
+    # ことが目的なので、PR 以外（Issue / Commit 等）と、人が明示的に呼んだ
+    # mention 系は対象外にする。
+    def checks_gated? : Bool
+      subject.type == Subject::Type::PULL_REQUEST && !reason.in?(HUMAN_MENTION_REASONS)
     end
 
     # 通知の pretext（botのセリフ）。`[<type>] <reason 文言>` 形式。
@@ -177,6 +222,79 @@ module Github
     getter html_url : String?
 
     def initialize
+    end
+  end
+
+  # チェック状態の判定に使う PR 情報。head の SHA だけ参照する（issue #105）。
+  class PullRequest
+    include JSON::Serializable
+
+    getter head : Head
+
+    class Head
+      include JSON::Serializable
+
+      getter sha : String
+    end
+  end
+
+  # GET /repos/:owner/:repo/commits/:ref/check-runs のレスポンス（issue #105）。
+  class CheckRuns
+    include JSON::Serializable
+
+    # ブロックしない conclusion。neutral / skipped は「実行された上で
+    # 通していい」結果なので成功側に含める。
+    PASSING_CONCLUSIONS = {
+      "success",
+      "neutral",
+      "skipped",
+    }
+
+    getter check_runs : Array(CheckRun) = [] of CheckRun
+
+    def checks_state : ChecksState
+      return ChecksState::NoChecks if check_runs.empty?
+      return ChecksState::Pending unless check_runs.all?(&.completed?)
+
+      check_runs.all?(&.passing?) ? ChecksState::Success : ChecksState::Failure
+    end
+
+    class CheckRun
+      include JSON::Serializable
+
+      getter status : String = ""
+      getter conclusion : String?
+
+      def completed? : Bool
+        status == "completed"
+      end
+
+      def passing? : Bool
+        conclusion.in?(PASSING_CONCLUSIONS)
+      end
+    end
+  end
+
+  # GET /repos/:owner/:repo/commits/:ref/status のレスポンス（issue #105）。
+  # check runs とは別系統の commit status（外部 CI 等）を表す。
+  class CombinedStatus
+    include JSON::Serializable
+
+    getter state : String = ""
+    getter total_count : Int32 = 0
+
+    def checks_state : ChecksState
+      # status が 1 件も無いと state は "pending" で返るため、件数で先に弾く。
+      return ChecksState::NoChecks if total_count.zero?
+
+      case state
+      when "success"
+        ChecksState::Success
+      when "failure", "error"
+        ChecksState::Failure
+      else
+        ChecksState::Pending
+      end
     end
   end
 

@@ -14,7 +14,7 @@ module Github
     def build_message(notify : Notification) : Notify::Message
       comment = @repo.find_comment_by_url notify.subject.comment_url
       Notify::Message.new(
-        mention: notify.mention?,
+        mention: mention?(notify),
         author_name: comment.user.login,
         author_icon: comment.user.avatar_url,
         author_link: comment.user.html_url,
@@ -26,6 +26,18 @@ module Github
         footer: notify.repository.full_name || "github",
         footer_icon: notify.repository.owner.avatar_url,
       )
+    end
+
+    # メンション（`@channel` / `@everyone`）を付けるか。
+    #
+    # mention 系 reason であることに加え、PR は CI・自動チェックが失敗中・実行中
+    # でないことを条件にする。まだレビューできる状態ではない PR でチャンネル全体を
+    # 叩かないため（issue #105）。通知そのものは抑止しない。
+    private def mention?(notify : Notification) : Bool
+      return false unless notify.mention?
+      return true unless notify.checks_gated?
+
+      !@repo.find_checks_state(notify).blocks_mention?
     end
 
     private def truncate_body(body : String?) : String?
