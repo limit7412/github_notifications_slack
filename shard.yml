@@ -13,6 +13,11 @@ crystal: ">= 1.20.0"
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
-    version: ~> 1.6
+    # Crystal 1.21 で Crystal::Lexer#next_string_array_token が削除され、
+    # `~> 1.6` で解決される最新の安定版 1.6.4 はコンパイルできない。対応は
+    # master に入っているが安定版のリリースがまだ無いため、修正を含むコミットに
+    # 固定して追従する。1.7 系がリリースされたら version 指定に戻すこと
+    # （issue #108）。
+    commit: cdd58b34b0d8a9c785d67183a7a8f07541549e55
 
 license: MIT

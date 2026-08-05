@@ -71,7 +71,7 @@ module Discord
       lines = [] of String
       lines << EVERYONE_MENTION if mention
       lines.concat pretexts.uniq
-      return nil if lines.empty?
+      return if lines.empty?
       Discord.truncate(lines.join("\n"), CONTENT_LIMIT)
     end
   end
@@ -122,7 +122,7 @@ module Discord
 
     # Slack で使う "#RRGGBB" 形式の色を Discord が要求する Int32 へ変換する。
     def self.color_from_hex(hex : String?) : Int32?
-      return nil unless hex
+      return unless hex
       hex.lchop('#').to_i?(16)
     end
   end
@@ -139,7 +139,7 @@ module Discord
 
     def self.from_message(message : Notify::Message) : Author?
       # Discord は author に name 必須のため、名前が無ければ author 自体を付けない。
-      return nil unless message.author_name
+      return unless message.author_name
       # 空文字の URL は Discord に 400 で弾かれるため nil にする。
       Author.new(message.author_name, message.author_link.presence, message.author_icon.presence)
     end
@@ -156,7 +156,7 @@ module Discord
 
     def self.from_message(message : Notify::Message) : Footer?
       # Discord は footer に text 必須のため、footer が無ければ付けない。
-      return nil unless message.footer
+      return unless message.footer
       # 空文字の icon_url は Discord に 400 で弾かれるため nil にする
       # （アラートは footer_icon: "" で来るため特に重要）。
       Footer.new(message.footer, message.footer_icon.presence)
