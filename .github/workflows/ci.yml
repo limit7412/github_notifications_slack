@@ -30,7 +30,9 @@ jobs:
       # shards install だけでは bin/ameba が作られないため明示的にビルドする
       # （issue #108）。
       - name: build ameba
-        run: crystal build lib/ameba/src/cli.cr -o bin/ameba
+        run: |
+          mkdir -p bin
+          crystal build lib/ameba/src/cli.cr -o bin/ameba
 
       - name: lint with ameba
         run: ./bin/ameba
