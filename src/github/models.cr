@@ -143,7 +143,7 @@ module Github
     # 限り、末尾セグメントが数値なら返す。Commit（末尾が SHA）や末尾スラッシュ、
     # URL が無い場合などは nil を返す（issue #96）。
     def number : String?
-      return nil unless type.in?(NUMBERED_TYPES)
+      return unless type.in?(NUMBERED_TYPES)
       segment = url.chomp('/').split('/').last?
       segment if segment && segment.matches?(/\A\d+\z/)
     end
