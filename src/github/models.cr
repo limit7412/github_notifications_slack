@@ -32,6 +32,18 @@ module Github
       "invitation"       => "招待が届きました",
     }
 
+    # 「一度きりの出来事」を指す reason 向けの、2 回目以降の文言。
+    #
+    # GitHub の reason は「そのスレッドを購読している理由」であってイベント種別
+    # ではないため、一度レビュー依頼された PR は以降のコメントや更新もすべて
+    # review_requested で届く。REASON_MESSAGES だけだと常に「レビューを依頼され
+    # ました」になり通知理由が実態と合わないので、コメントが起点の通知に限り
+    # 文言を差し替える（issue #104）。ここに reason を足せば他の reason にも
+    # 同じ切り替えを適用できる。
+    FOLLOWUP_MESSAGES = {
+      "review_requested" => "レビュー依頼中の PR にコメントがつきました",
+    }
+
     GENERIC_MESSAGE = "なにかあったみたいです。確認してみましょう！"
 
     getter subject : Subject
@@ -47,6 +59,11 @@ module Github
     end
 
     def reason_message : String
+      if subject.comment_triggered?
+        followup = FOLLOWUP_MESSAGES[reason]?
+        return followup if followup
+      end
+
       REASON_MESSAGES[reason]? || GENERIC_MESSAGE
     end
 
@@ -137,6 +154,18 @@ module Github
     def comment_url : String
       return latest_comment_url if latest_comment_url.presence
       type.in?(BODY_TYPES) ? url : ""
+    end
+
+    # 通知の起点がコメントかどうか。latest_comment_url はスレッド最新コメントの
+    # URL だが、コメントがまだ無いスレッドでは subject.url と同じ値が入る。
+    # よって url と異なる値のときだけ「コメントが起点」と判断できる（issue #104）。
+    #
+    # 既にコメントの付いた PR に後からレビュー依頼された場合、起点は依頼でも
+    # 直前のコメント URL が入るため誤判定する。通知 payload にイベント種別は
+    # 無く、追加の API 呼び出し無しでは区別できないため許容する。
+    def comment_triggered? : Bool
+      return false unless comment = latest_comment_url.presence
+      comment != url
     end
 
     # subject.url 末尾の PR / Issue / Discussion 番号。番号が意味を持つ type に
