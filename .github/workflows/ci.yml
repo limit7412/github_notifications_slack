@@ -13,10 +13,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
+      # crystal: latest だと Crystal の更新でいきなり CI が壊れるため固定する。
+      # 上げるときは ameba 側の対応状況も合わせて確認すること（issue #108）。
       - name: install crystal
         uses: crystal-lang/install-crystal@v1
         with:
-          crystal: latest
+          crystal: 1.21.0
 
       - name: install shards
         run: shards install
