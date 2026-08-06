@@ -143,6 +143,24 @@ describe Github::Notification do
       notification.reason_message.should eq "レビュー依頼中の PR にコメントがつきました"
     end
 
+    it "switches to a follow-up message when an assigned thread is updated by a comment" do
+      notification = notification_from(
+        "assign",
+        url: "https://api.github.com/repos/o/r/issues/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
+      )
+      notification.reason_message.should eq "担当している PR/Issue にコメントがつきました"
+    end
+
+    it "keeps the assign message while the thread has no comment" do
+      notification = notification_from(
+        "assign",
+        url: "https://api.github.com/repos/o/r/issues/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/1",
+      )
+      notification.reason_message.should eq "アサインされました"
+    end
+
     it "keeps the review-requested message while the thread has no comment" do
       notification = notification_from(
         "review_requested",
