@@ -132,6 +132,79 @@ module Github
       end
     end
 
+    # チェック状態を見るときに一度に取得する check runs の件数。
+    # これを超える数のチェックがある PR は一部しか見えないが、GitHub の上限
+    # 100 を超えるチェックは想定しにくいためページングはしない（issue #105）。
+    CHECKS_PER_PAGE = 100
+
+    # PR の CI・自動チェックの集計状態を返す（issue #105）。
+    #
+    # check runs（GitHub Actions 等）と commit status（外部 CI 等）は別系統で、
+    # 片方にしか結果が出ないことがあるため両方を見て厳しい方を採る。
+    #
+    # 取得できなかった場合は Unknown を返し、呼び出し側でメンションを維持させる。
+    # 通知の見逃しより誤メンションの方が軽い、という判断（安全側に倒す）。
+    def find_checks_state(notify : Notification) : ChecksState
+      return ChecksState::Unknown unless repo = notify.repository.full_name.try(&.presence)
+      return ChecksState::Unknown unless number = notify.subject.number
+      return ChecksState::Unknown unless sha = find_head_sha "/repos/#{repo}/pulls/#{number}"
+
+      runs = find_check_runs_state "/repos/#{repo}/commits/#{sha}/check-runs?per_page=#{CHECKS_PER_PAGE}"
+      runs.merge find_combined_status_state("/repos/#{repo}/commits/#{sha}/status?per_page=#{CHECKS_PER_PAGE}")
+    end
+
+    private def find_head_sha(path : String) : String?
+      return unless body = get_body path
+
+      begin
+        PullRequest.from_json(body).head.sha.presence
+      rescue
+        Serverless::Lambda.print_log "failed parse pull request data"
+        nil
+      end
+    end
+
+    private def find_check_runs_state(path : String) : ChecksState
+      return ChecksState::Unknown unless body = get_body path
+
+      begin
+        CheckRuns.from_json(body).checks_state
+      rescue
+        Serverless::Lambda.print_log "failed parse check runs data"
+        ChecksState::Unknown
+      end
+    end
+
+    private def find_combined_status_state(path : String) : ChecksState
+      return ChecksState::Unknown unless body = get_body path
+
+      begin
+        CombinedStatus.from_json(body).checks_state
+      rescue
+        Serverless::Lambda.print_log "failed parse combined status data"
+        ChecksState::Unknown
+      end
+    end
+
+    # チェック状態の取得用 GET。1 件の取得失敗で通知全体を巻き添えにしないよう、
+    # 例外・エラー応答はログだけ残して nil を返す（issue #105）。
+    private def get_body(path : String) : String?
+      res =
+        begin
+          @github.get path
+        rescue ex
+          Serverless::Lambda.print_log "failed to get #{path}: #{ex.message}"
+          return
+        end
+
+      unless res.success?
+        Serverless::Lambda.print_log "return #{res.status_code} from #{path}"
+        return
+      end
+
+      res.body
+    end
+
     # 通知を既読化する。last_read_at は排他的境界で、その時刻より前
     # （updated_at < last_read_at）に更新された通知だけが既読化される。
     # 等値（updated_at == last_read_at）は未読のまま残るため、送信済み通知を

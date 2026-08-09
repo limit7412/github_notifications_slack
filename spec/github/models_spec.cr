@@ -210,6 +210,28 @@ describe Github::Notification do
     end
   end
 
+  describe "#checks_gated?" do
+    it "is true for every pull request notification regardless of reason" do
+      # reason は購読理由であってイベント種別ではないため、mention 系も
+      # 「今回の更新がメンションだった」ことを意味しない。よって例外にしない。
+      [
+        "review_requested",
+        "assign",
+        "author",
+        "mention",
+        "team_mention",
+      ].each do |reason|
+        notification_from(reason, type: "PullRequest").checks_gated?.should be_true
+      end
+    end
+
+    it "is false for non pull request subjects" do
+      notification_from("review_requested", type: "Issue").checks_gated?.should be_false
+      notification_from("mention", type: "Issue").checks_gated?.should be_false
+      notification_from("author", type: "Commit").checks_gated?.should be_false
+    end
+  end
+
   it "parses a GitHub notifications API payload" do
     notifications = Array(Github::Notification).from_json(NOTIFICATIONS_FIXTURE)
     notifications.size.should eq 1
@@ -224,10 +246,10 @@ describe Github::Notification do
   end
 end
 
-private def notification_from(reason : String, url = "", latest_comment_url = "")
+private def notification_from(reason : String, type = "Issue", url = "", latest_comment_url = "")
   Github::Notification.from_json({
     reason:     reason,
-    subject:    {type: "Issue", title: "title", url: url, latest_comment_url: latest_comment_url},
+    subject:    {type: type, title: "title", url: url, latest_comment_url: latest_comment_url},
     repository: {owner: {login: "octocat"}},
     updated_at: "2026-07-14T00:00:00Z",
   }.to_json)
@@ -240,6 +262,96 @@ private def notification_with(url = "", repo_html_url : String? = nil)
     repository: {full_name: "octocat/Hello-World", html_url: repo_html_url, owner: {login: "octocat"}},
     updated_at: "2026-07-14T00:00:00Z",
   }.to_json)
+end
+
+describe Github::ChecksState do
+  describe "#merge" do
+    it "takes the stricter state of the two" do
+      Github::ChecksState::Success.merge(Github::ChecksState::Failure).should eq Github::ChecksState::Failure
+      Github::ChecksState::Pending.merge(Github::ChecksState::Failure).should eq Github::ChecksState::Failure
+      Github::ChecksState::Success.merge(Github::ChecksState::Pending).should eq Github::ChecksState::Pending
+      Github::ChecksState::NoChecks.merge(Github::ChecksState::Success).should eq Github::ChecksState::Success
+    end
+
+    it "keeps the other state when one side could not be fetched" do
+      Github::ChecksState::Unknown.merge(Github::ChecksState::Success).should eq Github::ChecksState::Success
+      Github::ChecksState::Failure.merge(Github::ChecksState::Unknown).should eq Github::ChecksState::Failure
+    end
+
+    it "stays unknown when neither side could be fetched" do
+      Github::ChecksState::Unknown.merge(Github::ChecksState::Unknown).should eq Github::ChecksState::Unknown
+    end
+
+    it "stays no-checks when neither side has any check" do
+      Github::ChecksState::NoChecks.merge(Github::ChecksState::NoChecks).should eq Github::ChecksState::NoChecks
+    end
+  end
+
+  describe "#blocks_mention?" do
+    it "blocks while checks are failing or still running" do
+      Github::ChecksState::Failure.blocks_mention?.should be_true
+      Github::ChecksState::Pending.blocks_mention?.should be_true
+    end
+
+    it "does not block on success, no checks, or a failed lookup" do
+      Github::ChecksState::Success.blocks_mention?.should be_false
+      Github::ChecksState::NoChecks.blocks_mention?.should be_false
+      Github::ChecksState::Unknown.blocks_mention?.should be_false
+    end
+  end
+end
+
+describe Github::CheckRuns do
+  describe "#checks_state" do
+    it "is success when every run completed without a blocking conclusion" do
+      check_runs_from([
+        {status: "completed", conclusion: "success"},
+        {status: "completed", conclusion: "skipped"},
+        {status: "completed", conclusion: "neutral"},
+      ]).checks_state.should eq Github::ChecksState::Success
+    end
+
+    it "is failure when a completed run has a blocking conclusion" do
+      check_runs_from([
+        {status: "completed", conclusion: "success"},
+        {status: "completed", conclusion: "failure"},
+      ]).checks_state.should eq Github::ChecksState::Failure
+    end
+
+    it "is pending while a run has not completed" do
+      check_runs_from([
+        {status: "completed", conclusion: "success"},
+        {status: "in_progress", conclusion: nil},
+      ]).checks_state.should eq Github::ChecksState::Pending
+    end
+
+    it "is no-checks when the commit has no check run" do
+      check_runs_from([] of NamedTuple(status: String, conclusion: String?)).checks_state.should eq Github::ChecksState::NoChecks
+    end
+  end
+end
+
+describe Github::CombinedStatus do
+  describe "#checks_state" do
+    it "maps the combined state" do
+      combined_status_from("success", 2).checks_state.should eq Github::ChecksState::Success
+      combined_status_from("failure", 2).checks_state.should eq Github::ChecksState::Failure
+      combined_status_from("error", 2).checks_state.should eq Github::ChecksState::Failure
+      combined_status_from("pending", 2).checks_state.should eq Github::ChecksState::Pending
+    end
+
+    it "is no-checks when the commit has no status, even though the api reports pending" do
+      combined_status_from("pending", 0).checks_state.should eq Github::ChecksState::NoChecks
+    end
+  end
+end
+
+private def check_runs_from(runs)
+  Github::CheckRuns.from_json({check_runs: runs}.to_json)
+end
+
+private def combined_status_from(state : String, total_count : Int32)
+  Github::CombinedStatus.from_json({state: state, total_count: total_count}.to_json)
 end
 
 NOTIFICATIONS_FIXTURE = <<-JSON
