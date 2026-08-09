@@ -14,7 +14,8 @@ jobs:
         uses: actions/checkout@v4
 
       # crystal: latest だと Crystal の更新でいきなり CI が壊れるため固定する。
-      # 上げるときは ameba 側の対応状況も合わせて確認すること（issue #108）。
+      # 上げるときは ameba 側の対応状況と、serverless.yml のビルドイメージの
+      # タグも合わせて確認すること（issue #108）。
       - name: install crystal
         uses: crystal-lang/install-crystal@v1
         with:
