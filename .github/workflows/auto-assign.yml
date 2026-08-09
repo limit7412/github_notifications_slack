@@ -1,0 +1,28 @@
+name: auto assign
+
+on:
+  issues:
+    types: [opened]
+  # fork からの PR でも書き込み権限のあるトークンで動かすため
+  # pull_request ではなく pull_request_target を使う。PR のコードは
+  # checkout も実行もせず、アサイン API を叩くだけなので安全。
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  assign:
+    name: assign
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: assign limit7412
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api "repos/$REPO/issues/$NUMBER/assignees" \
+            -f "assignees[]=limit7412"
