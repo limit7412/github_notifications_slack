@@ -4,6 +4,22 @@ on:
   push:
     branches: [master]
 
+# master へ短時間に複数回マージすると deploy が並走し、スタック
+# github-notifications-slack-prod が UPDATE_IN_PROGRESS のままで後発が
+# 落ちうる。dev 側（issue #112 / PR #113）と同じ理由なので同じ形で防ぐ
+# （issue #114）。
+#
+# cancel-in-progress は false。実行中のデプロイを打ち切るとスタックが
+# 中途半端な状態で残りうるため、待たせる方を選ぶ。
+#
+# 待機中の run は最新 1 本しか保持されず、3 回続けてマージすると中間の run は
+# キャンセルされる。prod は master の内容をデプロイするので、最新の run さえ
+# 通れば最終状態は正しく、むしろ無駄なデプロイが減る。dev と違いこのキャンセルは
+# 実害にならない。
+concurrency:
+  group: serverless-prod
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: deploy
