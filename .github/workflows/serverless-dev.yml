@@ -2,6 +2,25 @@ name: serverless-dev
 
 on: pull_request
 
+# 全 PR が同じ dev ステージ（CloudFormation スタック
+# github-notifications-slack-dev）へデプロイするため、複数 PR がほぼ同時に
+# 更新されるとスタックが UPDATE_IN_PROGRESS のままで先着以外が落ちる。
+# リポジトリ全体で 1 本ずつに直列化する（issue #112）。
+#
+# group に ref を含めないのが要点。PR ごとに分けると「別 PR と同時に走る」
+# という競合の原因そのものが残る。
+#
+# cancel-in-progress は false。実行中のデプロイを打ち切るとスタックが
+# 中途半端な状態で残りうるため、待たせる方を選ぶ。
+#
+# 制約: 同一 group の待機中 run は最新 1 本しか保持されず、3 本目が来ると
+# 待機中だったものは GitHub 側でキャンセルされる。その PR は deploy 未検証の
+# ままになるので、確認したい場合は再実行する（失敗ではなくキャンセル表示に
+# なるので区別はつく）。
+concurrency:
+  group: serverless-dev
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: deploy
