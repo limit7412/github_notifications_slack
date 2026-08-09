@@ -61,6 +61,30 @@ describe Github::Subject do
     end
   end
 
+  describe "#commented?" do
+    it "is true when the thread has a comment" do
+      subject = subject_from(
+        "PullRequest",
+        url: "https://api.github.com/repos/o/r/pulls/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
+      )
+      subject.commented?.should be_true
+    end
+
+    it "is false when latest_comment_url mirrors the subject url (no comment yet)" do
+      subject = subject_from(
+        "PullRequest",
+        url: "https://api.github.com/repos/o/r/pulls/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/pulls/1",
+      )
+      subject.commented?.should be_false
+    end
+
+    it "is false when latest_comment_url is blank" do
+      subject_from("PullRequest", url: "https://api.github.com/repos/o/r/pulls/1").commented?.should be_false
+    end
+  end
+
   describe "#number" do
     it "extracts a trailing issue/PR number from the url" do
       subject_from("Issue", url: "https://api.github.com/repos/o/r/issues/42").number.should eq "42"
@@ -108,6 +132,51 @@ describe Github::Notification do
 
     it "falls back to a generic message for unknown reasons" do
       notification_from("some_future_reason").reason_message.should eq Github::Notification::GENERIC_MESSAGE
+    end
+
+    it "switches to a follow-up message once a review-requested thread has a comment" do
+      notification = notification_from(
+        "review_requested",
+        url: "https://api.github.com/repos/o/r/pulls/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
+      )
+      notification.reason_message.should eq "レビュー依頼中の PR に動きがありました"
+    end
+
+    it "switches to a follow-up message once an assigned thread has a comment" do
+      notification = notification_from(
+        "assign",
+        url: "https://api.github.com/repos/o/r/issues/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
+      )
+      notification.reason_message.should eq "担当している PR/Issue に動きがありました"
+    end
+
+    it "keeps the assign message while the thread has no comment" do
+      notification = notification_from(
+        "assign",
+        url: "https://api.github.com/repos/o/r/issues/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/1",
+      )
+      notification.reason_message.should eq "アサインされました"
+    end
+
+    it "keeps the review-requested message while the thread has no comment" do
+      notification = notification_from(
+        "review_requested",
+        url: "https://api.github.com/repos/o/r/pulls/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/pulls/1",
+      )
+      notification.reason_message.should eq "レビューを依頼されました"
+    end
+
+    it "keeps the reason message for reasons without a follow-up variant" do
+      notification = notification_from(
+        "comment",
+        url: "https://api.github.com/repos/o/r/pulls/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
+      )
+      notification.reason_message.should eq "コメントがつきました"
     end
   end
 
@@ -173,10 +242,10 @@ describe Github::Notification do
   end
 end
 
-private def notification_from(reason : String, type = "Issue")
+private def notification_from(reason : String, type = "Issue", url = "", latest_comment_url = "")
   Github::Notification.from_json({
     reason:     reason,
-    subject:    {type: type, title: "title"},
+    subject:    {type: type, title: "title", url: url, latest_comment_url: latest_comment_url},
     repository: {owner: {login: "octocat"}},
     updated_at: "2026-07-14T00:00:00Z",
   }.to_json)

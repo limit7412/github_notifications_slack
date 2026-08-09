@@ -25,10 +25,11 @@ private def notification(
   reason = "review_requested",
   repo_html_url : String? = "https://github.com/octocat/Hello-World",
   type = "Issue",
+  latest_comment_url = "",
 )
   Github::Notification.from_json({
     reason:     reason,
-    subject:    {type: type, title: "Spurious failure", url: url},
+    subject:    {type: type, title: "Spurious failure", url: url, latest_comment_url: latest_comment_url},
     repository: {full_name: "octocat/Hello-World", html_url: repo_html_url, owner: {login: "octocat"}},
     updated_at: "2026-07-14T00:00:00Z",
   }.to_json)
@@ -46,6 +47,14 @@ describe Github::Usecase do
   describe "#build_message" do
     it "reflects the reason in the pretext" do
       build(notification(reason: "review_requested"), comment).pretext.should eq "[Issue] レビューを依頼されました"
+    end
+
+    it "reflects the follow-up wording for a commented review-requested thread in the pretext" do
+      notify = notification(
+        reason: "review_requested",
+        latest_comment_url: "https://api.github.com/repos/octocat/Hello-World/issues/comments/1",
+      )
+      build(notify, comment).pretext.should eq "[Issue] レビュー依頼中の PR に動きがありました"
     end
 
     it "formats the title as owner/repo#number title" do

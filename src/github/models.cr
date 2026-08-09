@@ -61,6 +61,22 @@ module Github
       "invitation"       => "招待が届きました",
     }
 
+    # 「一度きりの出来事」を指す reason 向けの、2 回目以降の文言。
+    #
+    # GitHub の reason は「そのスレッドを購読している理由」であってイベント種別
+    # ではないため、一度レビュー依頼／アサインされた PR・Issue は、以降のコメントや
+    # 更新もすべて同じ reason で届く。REASON_MESSAGES だけだと常に「レビューを依頼
+    # されました」「アサインされました」になり通知理由が実態と合わないので、
+    # 初回ではないと判断できる通知は文言を差し替える（issue #104）。
+    #
+    # 何が起きたか（コメントか push か状態変更か）は通知 payload から判別できない
+    # ため、文言はコメントに限定せず「動きがありました」に留める。
+    # ここに reason を足せば他の reason にも同じ切り替えを適用できる。
+    FOLLOWUP_MESSAGES = {
+      "review_requested" => "レビュー依頼中の PR に動きがありました",
+      "assign"           => "担当している PR/Issue に動きがありました",
+    }
+
     GENERIC_MESSAGE = "なにかあったみたいです。確認してみましょう！"
 
     # 人が明示的に呼んだことを表す reason。CI の状態に関わらずメンションする
@@ -84,6 +100,11 @@ module Github
     end
 
     def reason_message : String
+      if subject.commented?
+        followup = FOLLOWUP_MESSAGES[reason]?
+        return followup if followup
+      end
+
       REASON_MESSAGES[reason]? || GENERIC_MESSAGE
     end
 
@@ -182,6 +203,22 @@ module Github
     def comment_url : String
       return latest_comment_url if latest_comment_url.presence
       type.in?(BODY_TYPES) ? url : ""
+    end
+
+    # スレッドにコメントが 1 件以上付いているか。latest_comment_url はスレッドの
+    # 最新コメントの URL だが、コメントがまだ無いスレッドでは subject.url と同じ
+    # 値が入る。よって url と異なる値のときだけコメントありと判断できる。
+    #
+    # あくまで「コメントが存在するか」であって「今回の通知の起点がコメントか」では
+    # ない点に注意。latest_comment_url は通知を発生させたイベントではなくスレッドの
+    # 現在の最新コメントを指すため、コメント済みスレッドに push や状態変更が来た
+    # 通知でも真になる。通知 payload にイベント種別が無く、追加の API 呼び出し
+    # 無しでは区別できないので、これを「初回ではない＝その後の動き」の目安として
+    # 使い、文言側はコメントに限定しない表現にしている（issue #104 / PR #106
+    # レビュー指摘）。
+    def commented? : Bool
+      return false unless comment = latest_comment_url.presence
+      comment != url
     end
 
     # subject.url 末尾の PR / Issue / Discussion 番号。番号が意味を持つ type に
