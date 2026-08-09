@@ -107,9 +107,17 @@ describe Github::Usecase do
       build_with_checks(pull_request, Github::ChecksState::Unknown).mention?.should be_true
     end
 
-    it "still mentions on a failing pull request when a human mentioned the user" do
+    it "does not mention on a failing pull request even for a mention reason" do
+      # reason=mention は一度メンションされた PR に永続するため、その後の
+      # push やコメントでも維持される。例外にすると赤い PR でチャンネル全体を
+      # 叩いてしまうので、mention 系もチェック状態で制御する。
       notify = pull_request(reason: "mention")
-      build_with_checks(notify, Github::ChecksState::Failure).mention?.should be_true
+      build_with_checks(notify, Github::ChecksState::Failure).mention?.should be_false
+    end
+
+    it "mentions on a passing pull request for a mention reason" do
+      notify = pull_request(reason: "mention")
+      build_with_checks(notify, Github::ChecksState::Success).mention?.should be_true
     end
 
     it "keeps non-mention reasons unmentioned regardless of the checks state" do

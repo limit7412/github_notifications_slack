@@ -79,14 +79,6 @@ module Github
 
     GENERIC_MESSAGE = "なにかあったみたいです。確認してみましょう！"
 
-    # 人が明示的に呼んだことを表す reason。CI の状態に関わらずメンションする
-    # （呼ばれている以上、チェックの成否とは無関係に見てほしいはずなので
-    # 抑止しない / issue #105）。
-    HUMAN_MENTION_REASONS = {
-      "mention",
-      "team_mention",
-    }
-
     getter subject : Subject
     getter reason : String
     getter repository : Repository
@@ -110,10 +102,19 @@ module Github
 
     # CI・自動チェックの状態でメンションを抑止する対象か（issue #105）。
     # レビューできる状態になっていない PR で `@channel` / `@everyone` を撃たない
-    # ことが目的なので、PR 以外（Issue / Commit 等）と、人が明示的に呼んだ
-    # mention 系は対象外にする。
+    # ことが目的なので、PR の通知はすべて対象にする。
+    #
+    # 当初は mention / team_mention を「人が明示的に呼んだ」ものとして対象外に
+    # していたが、reason は購読理由であってイベント種別ではないため（FOLLOWUP_MESSAGES
+    # のコメント参照）、一度メンションされた PR はその後の push やコメントでも
+    # reason=mention のまま届く。これを対象外にすると、最も関与している PR でこそ
+    # チェックが赤いままチャンネル全体を叩いてしまい本末転倒なので、reason による
+    # 例外は設けない（PR #107 レビュー指摘）。
+    #
+    # 実際に今回の更新がメンションだったかは通知 payload からは判別できない。
+    # メンションされた通知自体は従来どおり届き、`@channel` が付かなくなるだけ。
     def checks_gated? : Bool
-      subject.type == Subject::Type::PULL_REQUEST && !reason.in?(HUMAN_MENTION_REASONS)
+      subject.type == Subject::Type::PULL_REQUEST
     end
 
     # 通知の pretext（botのセリフ）。`[<type>] <reason 文言>` 形式。

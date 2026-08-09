@@ -211,19 +211,23 @@ describe Github::Notification do
   end
 
   describe "#checks_gated?" do
-    it "is true for pull request notifications with a machine-driven reason" do
-      notification_from("review_requested", type: "PullRequest").checks_gated?.should be_true
-      notification_from("assign", type: "PullRequest").checks_gated?.should be_true
-      notification_from("author", type: "PullRequest").checks_gated?.should be_true
-    end
-
-    it "is false when a human explicitly mentioned the user" do
-      notification_from("mention", type: "PullRequest").checks_gated?.should be_false
-      notification_from("team_mention", type: "PullRequest").checks_gated?.should be_false
+    it "is true for every pull request notification regardless of reason" do
+      # reason は購読理由であってイベント種別ではないため、mention 系も
+      # 「今回の更新がメンションだった」ことを意味しない。よって例外にしない。
+      [
+        "review_requested",
+        "assign",
+        "author",
+        "mention",
+        "team_mention",
+      ].each do |reason|
+        notification_from(reason, type: "PullRequest").checks_gated?.should be_true
+      end
     end
 
     it "is false for non pull request subjects" do
       notification_from("review_requested", type: "Issue").checks_gated?.should be_false
+      notification_from("mention", type: "Issue").checks_gated?.should be_false
       notification_from("author", type: "Commit").checks_gated?.should be_false
     end
   end
