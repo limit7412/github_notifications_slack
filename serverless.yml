@@ -24,8 +24,13 @@ custom:
       #
       # chmod はコンテナ内(root)で実行する。Linux ランナーでは生成物が
       # root 所有になり、コンテナ外の runner ユーザーでは chmod できないため。
+      #
+      # イメージのタグは latest ではなくバージョンで固定する。latest のままだと
+      # Crystal の更新で、CI(ci.yml)が検証したのと違うコンパイラで本番成果物が
+      # 作られてしまい、互換性が壊れた場合は deploy も突然失敗する。
+      # ci.yml の crystal バージョンと揃えて上げること(issue #108)。
       'before:package:createDeploymentArtifacts': |
-        docker run --rm --platform linux/arm64 -v "$PWD":/work -w /work crystallang/crystal:latest-alpine \
+        docker run --rm --platform linux/arm64 -v "$PWD":/work -w /work crystallang/crystal:1.21.0-alpine \
           sh -c "apk add --no-cache openssl-libs-static zlib-static libevent-static && crystal build --link-flags -static -o bootstrap src/main.cr && chmod +x bootstrap"
 
 provider:
