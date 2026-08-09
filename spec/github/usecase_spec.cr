@@ -41,12 +41,12 @@ describe Github::Usecase do
       build(notification(reason: "review_requested"), comment).pretext.should eq "[Issue] レビューを依頼されました"
     end
 
-    it "reflects a follow-up comment on a review-requested thread in the pretext" do
+    it "reflects the follow-up wording for a commented review-requested thread in the pretext" do
       notify = notification(
         reason: "review_requested",
         latest_comment_url: "https://api.github.com/repos/octocat/Hello-World/issues/comments/1",
       )
-      build(notify, comment).pretext.should eq "[Issue] レビュー依頼中の PR にコメントがつきました"
+      build(notify, comment).pretext.should eq "[Issue] レビュー依頼中の PR に動きがありました"
     end
 
     it "formats the title as owner/repo#number title" do

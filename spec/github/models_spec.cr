@@ -61,14 +61,14 @@ describe Github::Subject do
     end
   end
 
-  describe "#comment_triggered?" do
-    it "is true when latest_comment_url points to a comment" do
+  describe "#commented?" do
+    it "is true when the thread has a comment" do
       subject = subject_from(
         "PullRequest",
         url: "https://api.github.com/repos/o/r/pulls/1",
         latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
       )
-      subject.comment_triggered?.should be_true
+      subject.commented?.should be_true
     end
 
     it "is false when latest_comment_url mirrors the subject url (no comment yet)" do
@@ -77,11 +77,11 @@ describe Github::Subject do
         url: "https://api.github.com/repos/o/r/pulls/1",
         latest_comment_url: "https://api.github.com/repos/o/r/pulls/1",
       )
-      subject.comment_triggered?.should be_false
+      subject.commented?.should be_false
     end
 
     it "is false when latest_comment_url is blank" do
-      subject_from("PullRequest", url: "https://api.github.com/repos/o/r/pulls/1").comment_triggered?.should be_false
+      subject_from("PullRequest", url: "https://api.github.com/repos/o/r/pulls/1").commented?.should be_false
     end
   end
 
@@ -134,22 +134,22 @@ describe Github::Notification do
       notification_from("some_future_reason").reason_message.should eq Github::Notification::GENERIC_MESSAGE
     end
 
-    it "switches to a follow-up message when a review-requested thread is updated by a comment" do
+    it "switches to a follow-up message once a review-requested thread has a comment" do
       notification = notification_from(
         "review_requested",
         url: "https://api.github.com/repos/o/r/pulls/1",
         latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
       )
-      notification.reason_message.should eq "レビュー依頼中の PR にコメントがつきました"
+      notification.reason_message.should eq "レビュー依頼中の PR に動きがありました"
     end
 
-    it "switches to a follow-up message when an assigned thread is updated by a comment" do
+    it "switches to a follow-up message once an assigned thread has a comment" do
       notification = notification_from(
         "assign",
         url: "https://api.github.com/repos/o/r/issues/1",
         latest_comment_url: "https://api.github.com/repos/o/r/issues/comments/1",
       )
-      notification.reason_message.should eq "担当している PR/Issue にコメントがつきました"
+      notification.reason_message.should eq "担当している PR/Issue に動きがありました"
     end
 
     it "keeps the assign message while the thread has no comment" do
