@@ -39,6 +39,18 @@ private def comment(body : String? = "body", html_url : String? = "https://examp
   Github::Comment.from_json({body: body, html_url: html_url, user: {login: "octocat"}}.to_json)
 end
 
+# コメントが無いスレッドで本文取得先になる subject 本体（PR / Issue）のレスポンス。
+# 件数を省くとコメントオブジェクトと同じ形になる（issue #116）。
+private def subject_detail(comments : Int32? = nil, review_comments : Int32? = nil)
+  Github::Comment.from_json({
+    body:            "body",
+    html_url:        "https://example.com/c",
+    user:            {login: "octocat"},
+    comments:        comments,
+    review_comments: review_comments,
+  }.to_json)
+end
+
 private def build(notify, comment)
   Github::Usecase.new(StubRepo.new(comment)).build_message(notify)
 end
@@ -55,6 +67,18 @@ describe Github::Usecase do
         latest_comment_url: "https://api.github.com/repos/octocat/Hello-World/issues/comments/1",
       )
       build(notify, comment).pretext.should eq "[Issue] レビュー依頼中の PR に動きがありました"
+    end
+
+    # latest_comment_url からはコメントの有無が分からない通知でも、本文取得で
+    # 得た subject 本体のコメント数で文言を切り替える（issue #116）。
+    it "reflects the follow-up wording when the fetched pull request has comments" do
+      message = build(pull_request(reason: "assign"), subject_detail(comments: 1, review_comments: 0))
+      message.pretext.should eq "[PullRequest] 担当している PR/Issue に動きがありました"
+    end
+
+    it "keeps the initial wording when the fetched pull request has no comment" do
+      message = build(pull_request(reason: "assign"), subject_detail(comments: 0, review_comments: 0))
+      message.pretext.should eq "[PullRequest] アサインされました"
     end
 
     it "formats the title as owner/repo#number title" do

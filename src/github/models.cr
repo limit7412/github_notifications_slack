@@ -72,6 +72,9 @@ module Github
     # 何が起きたか（コメントか push か状態変更か）は通知 payload から判別できない
     # ため、文言はコメントに限定せず「動きがありました」に留める。
     # ここに reason を足せば他の reason にも同じ切り替えを適用できる。
+    #
+    # 切り替えの判定は Subject#commented? だけでは足りず、本文取得で得た subject
+    # 本体のコメント数も併用する（issue #116。詳細は followup? のコメント）。
     FOLLOWUP_MESSAGES = {
       "review_requested" => "レビュー依頼中の PR に動きがありました",
       "assign"           => "担当している PR/Issue に動きがありました",
@@ -91,13 +94,39 @@ module Github
       reason.in?(MENTION_REASONS)
     end
 
-    def reason_message : String
-      if subject.commented?
+    # reason に対応する文言。detail には本文取得で得た subject 本体（PR / Issue）を
+    # 渡す。コメントの有無の判定に使うだけなので、渡さなければ従来どおり
+    # Subject#commented? のみで判定する。
+    def reason_message(detail : Comment? = nil) : String
+      if followup?(detail)
         followup = FOLLOWUP_MESSAGES[reason]?
         return followup if followup
       end
 
       REASON_MESSAGES[reason]? || GENERIC_MESSAGE
+    end
+
+    # 「初回ではない＝その後の動き」とみなせるか。
+    #
+    # Subject#commented?（latest_comment_url が subject.url と異なる）だけでは
+    # 取りこぼす。latest_comment_url は通知を発生させたイベント側を反映することが
+    # あり、コメント済みのスレッドでも push・レビュー・アサイン変更が起点の通知では
+    # subject.url に戻る。またレビューコメントは latest_comment_url に現れない
+    # ことがあるため、レビュー上でだけ議論されている PR は常に初回扱いになる。
+    # 結果、コメントの付いた PR でも「アサインされました」のままになる（issue #116）。
+    #
+    # そこで本文表示のためにどのみち取得している subject 本体のレスポンスを使う。
+    # Subject#commented? が false のとき comment_url は PR / Issue 自体を指し、
+    # そのレスポンスにはコメント数（PR は会話とレビューの 2 種）が含まれるので、
+    # 追加の API 呼び出し無しでスレッドにコメントがあるかを判定できる。
+    #
+    # 逆に Subject#commented? が true のときは取得先が実コメントでコメント数を
+    # 持たないが、その場合は先に true が確定するので影響しない。
+    private def followup?(detail : Comment?) : Bool
+      return true if subject.commented?
+      return false unless detail
+
+      detail.commented?
     end
 
     # CI・自動チェックの状態でメンションを抑止する対象か（issue #105）。
@@ -118,8 +147,9 @@ module Github
     end
 
     # 通知の pretext（botのセリフ）。`[<type>] <reason 文言>` 形式。
-    def pretext : String
-      "[#{subject.type}] #{reason_message}"
+    # detail は reason_message にそのまま渡す（issue #116）。
+    def pretext(detail : Comment? = nil) : String
+      "[#{subject.type}] #{reason_message(detail)}"
     end
 
     # 一目で対象が分かるよう `owner/repo#番号 タイトル` 形式にする。
@@ -211,12 +241,15 @@ module Github
     # 値が入る。よって url と異なる値のときだけコメントありと判断できる。
     #
     # あくまで「コメントが存在するか」であって「今回の通知の起点がコメントか」では
-    # ない点に注意。latest_comment_url は通知を発生させたイベントではなくスレッドの
-    # 現在の最新コメントを指すため、コメント済みスレッドに push や状態変更が来た
-    # 通知でも真になる。通知 payload にイベント種別が無く、追加の API 呼び出し
-    # 無しでは区別できないので、これを「初回ではない＝その後の動き」の目安として
-    # 使い、文言側はコメントに限定しない表現にしている（issue #104 / PR #106
-    # レビュー指摘）。
+    # ない点に注意。通知 payload にイベント種別が無く、追加の API 呼び出し無しでは
+    # 区別できないので、これを「初回ではない＝その後の動き」の目安として使い、
+    # 文言側はコメントに限定しない表現にしている（issue #104 / PR #106 レビュー指摘）。
+    #
+    # ただし真になるのは片道で、これが偽でもコメントが無いとは限らない。
+    # latest_comment_url は通知を発生させたイベント側を反映することがあり、
+    # コメント済みでも push などが起点の通知では subject.url に戻る。よって
+    # 「コメントが無い」側の確定には使えず、Notification#followup? では subject
+    # 本体のコメント数と併用する（issue #116）。
     def commented? : Bool
       return false unless comment = latest_comment_url.presence
       comment != url
@@ -240,15 +273,30 @@ module Github
     getter owner : User
   end
 
+  # 通知本文の取得結果。コメントが無いスレッドでは subject 本体（PR / Issue）を
+  # 取得するため、コメントと subject 本体の両方をこの 1 クラスで受ける。
   class Comment
     include JSON::Serializable
 
     getter user : User
     getter html_url : String?
     getter body : String?
+    # スレッドのコメント数。subject 本体を取得したときだけ入り、コメント
+    # オブジェクトのレスポンスには無いため nilable（issue #116）。
+    # PR は会話タブ（comments）とレビュー（review_comments）で別カウントになる。
+    getter comments : Int32?
+    getter review_comments : Int32?
 
     def initialize(@body)
       @user = User.new
+    end
+
+    # スレッドにコメントが 1 件以上付いているか（issue #116）。
+    # 件数が取れない場合（コメントオブジェクト・本文取得失敗・本文なし通知）は
+    # 判断材料が無いので false を返し、呼び出し側で初回向け文言に倒す。
+    def commented? : Bool
+      total = (comments || 0) + (review_comments || 0)
+      total.positive?
     end
   end
 
