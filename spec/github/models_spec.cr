@@ -178,11 +178,47 @@ describe Github::Notification do
       )
       notification.reason_message.should eq "コメントがつきました"
     end
+
+    # latest_comment_url が subject.url に戻る通知でも、取得済みの subject 本体の
+    # コメント数で初回でないと判断できる（issue #116）。
+    it "switches to a follow-up message when the fetched pull request has conversation comments" do
+      message = pull_request_without_comment_signal.reason_message(subject_detail(comments: 2, review_comments: 0))
+      message.should eq "担当している PR/Issue に動きがありました"
+    end
+
+    it "switches to a follow-up message when the fetched pull request only has review comments" do
+      message = pull_request_without_comment_signal.reason_message(subject_detail(comments: 0, review_comments: 3))
+      message.should eq "担当している PR/Issue に動きがありました"
+    end
+
+    it "switches to a follow-up message when the fetched issue has comments" do
+      notification = notification_from(
+        "assign",
+        url: "https://api.github.com/repos/o/r/issues/1",
+        latest_comment_url: "https://api.github.com/repos/o/r/issues/1",
+      )
+      notification.reason_message(subject_detail(comments: 1)).should eq "担当している PR/Issue に動きがありました"
+    end
+
+    it "keeps the assign message when the fetched pull request has no comment at all" do
+      message = pull_request_without_comment_signal.reason_message(subject_detail(comments: 0, review_comments: 0))
+      message.should eq "アサインされました"
+    end
+
+    it "keeps the assign message when the fetched payload carries no comment count" do
+      # 本文取得に失敗した場合など、判断材料が無いときは初回向け文言のままにする
+      pull_request_without_comment_signal.reason_message(subject_detail).should eq "アサインされました"
+    end
   end
 
   describe "#pretext" do
     it "prefixes the subject type before the reason message" do
       notification_from("mention").pretext.should eq "[Issue] メンションされました"
+    end
+
+    it "passes the fetched subject detail through to the reason message" do
+      pretext = pull_request_without_comment_signal.pretext(subject_detail(comments: 1))
+      pretext.should eq "[PullRequest] 担当している PR/Issue に動きがありました"
     end
   end
 
@@ -253,6 +289,52 @@ private def notification_from(reason : String, type = "Issue", url = "", latest_
     repository: {owner: {login: "octocat"}},
     updated_at: "2026-07-14T00:00:00Z",
   }.to_json)
+end
+
+# latest_comment_url が subject.url に戻っている（＝コメントの有無を判定できない）
+# アサイン済み PR の通知（issue #116）。
+private def pull_request_without_comment_signal
+  notification_from(
+    "assign",
+    type: "PullRequest",
+    url: "https://api.github.com/repos/o/r/pulls/1",
+    latest_comment_url: "https://api.github.com/repos/o/r/pulls/1",
+  )
+end
+
+# 本文取得で返る subject 本体（PR / Issue）のレスポンス。件数を省くと
+# コメントオブジェクト（件数フィールドを持たない）と同じ形になる。
+private def subject_detail(comments : Int32? = nil, review_comments : Int32? = nil)
+  Github::Comment.from_json({
+    body:            "body",
+    user:            {login: "octocat"},
+    comments:        comments,
+    review_comments: review_comments,
+  }.to_json)
+end
+
+describe Github::Comment do
+  describe "#commented?" do
+    it "is true when the pull request has conversation comments" do
+      subject_detail(comments: 2, review_comments: 0).commented?.should be_true
+    end
+
+    it "is true when the pull request only has review comments" do
+      subject_detail(comments: 0, review_comments: 3).commented?.should be_true
+    end
+
+    it "is false when the pull request has no comment at all" do
+      subject_detail(comments: 0, review_comments: 0).commented?.should be_false
+    end
+
+    it "is false when the payload has no comment count (a comment object)" do
+      subject_detail.commented?.should be_false
+    end
+
+    it "is false for a locally built comment (no comment url / fetch failure)" do
+      Github::Comment.new(nil).commented?.should be_false
+    end
+  end
 end
 
 private def notification_with(url = "", repo_html_url : String? = nil)

@@ -18,7 +18,9 @@ module Github
         author_name: comment.user.login,
         author_icon: comment.user.avatar_url,
         author_link: comment.user.html_url,
-        pretext: notify.pretext,
+        # コメントが無いスレッドでは comment は subject 本体（PR / Issue）になる。
+        # その中のコメント数を文言の切り替え判定に使う（issue #116）。
+        pretext: notify.pretext(comment),
         color: notify.subject.color,
         title: notify.display_title,
         title_link: notify.link(comment),
