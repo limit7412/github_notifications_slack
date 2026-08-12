@@ -4,6 +4,8 @@
 
 Always review in Japanese.
 
+レビューコメントやドキュメントなど日本語の文章を書くときは、`.claude/skills/japanese-tech-writing` の文章規範に従う。
+
 ## github
 
 - 機能実装時はデフォルトブランチへのPRを作成する
