@@ -5,6 +5,7 @@
 Always review in Japanese.
 
 レビューコメントやドキュメントなど日本語の文章を書くときは、`.claude/skills/japanese-tech-writing` の文章規範に従う。
+読み物として読ませたい解説文を書くときは、あわせて `.claude/skills/cognitive-rhythm-writing` の緩急の規範を用いる。
 
 ## github
 
