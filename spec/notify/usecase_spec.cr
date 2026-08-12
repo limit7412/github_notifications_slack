@@ -101,7 +101,7 @@ describe Notify::Usecase do
     it "未送信通知と同一タイムスタンプの通知を巻き込んで既読化しない" do
       # 先頭 2 件が同時刻。チャンク境界がその間に落ちても、境界 t(1) は排他的
       # なので未送信側の t(1) は既読化されない（送信済み側の t(1) も未読に残り
-      # 次回再送されるが、ロストよりも稀な重複を許容する）。
+      # 次回再送されるが、取りこぼしよりも稀な重複を許容する）。
       notifications = [notif("2026-01-01T00:00:01Z"), notif("2026-01-01T00:00:01Z"), notif("2026-01-01T00:00:02Z")]
       repo = run(notifications, ChunkPoster.new([1, 1, 1])) do |usecase|
         usecase.check_notifications

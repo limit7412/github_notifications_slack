@@ -6,7 +6,7 @@ require "../runtime/lambda"
 module Github
   class NotificationRepository
     PER_PAGE  = 100 # GitHub /notifications の per_page 上限
-    MAX_PAGES =  20 # 暴走防止の取得ページ数上限（= 最大 2000 件）
+    MAX_PAGES =  20 # 暴走防止の取得ページ数上限（＝最大 2000 件）
 
     def initialize(@token : String)
       uri = URI.parse "https://api.github.com"
@@ -30,7 +30,7 @@ module Github
     # 安定させる。上限より新しい通知は取得対象から外れるが、次回実行で取得される。
     # before は呼び出し側から受け取る。全件送信後の既読化境界（last_read_at）に
     # 同じ値を使うことで、取得フィルタ（updated < before）と既読化（updated <
-    # last_read_at）が同じ排他的比較になり、「取得・送信した集合」と「既読化される
+    # last_read_at）が同じ排他的比較になり、「取得して送信した集合」と「既読化される
     # 集合」を一致させられる（issue #100）。
     #
     # 取得しきれない場合（途中ページの一時失敗 5xx/401、またはページ数上限到達）は、
@@ -38,13 +38,13 @@ module Github
     # スキップして次回に委ねる。
     def find_notifications_unread(before : Time) : Array(Notification)
       # ウォームスタート間で使い回した keep-alive 接続が GitHub 側の古い
-      # レプリカに固定され、未読があるのに空応答が約47分続く事象を観測した
+      # レプリカに固定され、未読があるのに空応答が約 47 分続く事象を観測した
       # （issue #102）。実行のたびに接続を張り直して固定を解き、古い応答を
-      # 読み続ける時間を最長でも1実行間隔（1分）に抑える。同一実行内の
-      # ページング・コメント取得・既読化ではそのまま再利用される
+      # 読み続ける時間を最長でも 1 実行間隔（1 分）に抑える。同一実行内の
+      # ページングやコメント取得、既読化ではそのまま再利用される
       # （close 後の接続は次のリクエストで自動的に張り直される）。
-      # TLS ハンドシェイクが毎実行1回増えるが、毎分・数百 ms の処理なので
-      # 通知が長時間届かないリスクより軽いと判断した。
+      # TLS ハンドシェイクが毎実行 1 回増えるが、毎分の実行が数百 ms で済む
+      # 処理なので、通知が長時間届かないリスクより軽いと判断した。
       @github.close
 
       notifications = [] of Notification
@@ -137,7 +137,7 @@ module Github
     # 100 を超えるチェックは想定しにくいためページングはしない（issue #105）。
     CHECKS_PER_PAGE = 100
 
-    # PR の CI・自動チェックの集計状態を返す（issue #105）。
+    # PR の CI などの自動チェックの集計状態を返す（issue #105）。
     #
     # check runs（GitHub Actions 等）と commit status（外部 CI 等）は別系統で、
     # 片方にしか結果が出ないことがあるため両方を見て厳しい方を採る。
@@ -187,7 +187,7 @@ module Github
     end
 
     # チェック状態の取得用 GET。1 件の取得失敗で通知全体を巻き添えにしないよう、
-    # 例外・エラー応答はログだけ残して nil を返す（issue #105）。
+    # 例外もエラー応答もログだけ残して nil を返す（issue #105）。
     private def get_body(path : String) : String?
       res =
         begin

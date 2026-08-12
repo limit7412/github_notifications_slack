@@ -43,7 +43,7 @@ module Discord
 
         # 通知が複数投稿に分割される場合、前半チャンク送信後に後半が 429/5xx で
         # 失敗すると既読化されず、次回実行で前半が重複投稿される。これを避けるため
-        # レート制限・一時的な 5xx は Retry-After に従って再送する。
+        # レート制限（429）と一時的な 5xx は Retry-After に従って再送する。
         retryable = res.status.code == 429 || res.status.server_error?
         if retryable && attempt < MAX_SEND_ATTEMPTS
           sleep retry_after(res)
