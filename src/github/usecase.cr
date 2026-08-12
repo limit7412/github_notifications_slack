@@ -32,8 +32,8 @@ module Github
 
     # メンション（`@channel` / `@everyone`）を付けるか。
     #
-    # mention 系 reason であることに加え、PR は CI・自動チェックが失敗中・実行中
-    # でないことを条件にする。まだレビューできる状態ではない PR でチャンネル全体を
+    # mention 系 reason であることに加え、PR は CI などの自動チェックが失敗中でも
+    # 実行中でもないことを条件にする。まだレビューできる状態ではない PR でチャンネル全体を
     # 叩かないため（issue #105）。通知そのものは抑止しない。
     private def mention?(notify : Notification) : Bool
       return false unless notify.mention?

@@ -56,7 +56,7 @@ describe Discord::Embed do
     end
 
     it "drops empty url / icon fields so Discord does not reject them" do
-      # アラートは footer_icon: "" で来るため、空文字は nil として出さない
+      # アラートは footer_icon: "" で来るため、空文字は nil として出さない。
       message = Notify::Message.new(
         author_name: "octocat",
         author_link: "",
@@ -72,7 +72,7 @@ describe Discord::Embed do
       embed.author.as(Discord::Author).icon_url.should be_nil
       embed.footer.as(Discord::Footer).icon_url.should be_nil
 
-      # 空文字フィールドはシリアライズされない
+      # 空文字フィールドはシリアライズされない。
       parsed = JSON.parse(embed.to_json)
       parsed["footer"].as_h.has_key?("icon_url").should be_false
     end

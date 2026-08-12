@@ -62,8 +62,8 @@ module Discord
       posts
     end
 
-    # botのセリフ（pretext）を content に出力する。embed には pretext 相当の欄が
-    # 無いため、Slack と同様に「botの発言行」として embed の外（content）へ出す
+    # bot のセリフ（pretext）を content に出力する。embed には pretext 相当の欄が
+    # 無いため、Slack と同様に「bot の発言行」として embed の外（content）へ出す
     # （issue #95）。メンションは embed 内では機能しないため content 先頭に
     # @everyone を添える。チャンク内で重複するセリフは uniq でまとめ、content は
     # 2000 文字上限があるため truncate する。
@@ -105,7 +105,7 @@ module Discord
     end
 
     def self.from_message(message : Notify::Message) : Embed
-      # pretext（botのセリフ）は Post の content 側に出すため、description には
+      # pretext（bot のセリフ）は Post の content 側に出すため、description には
       # 含めずコメント本文のみとする（二重表示を避ける / issue #95）。
       description = message.text.try(&.presence)
 

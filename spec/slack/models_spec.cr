@@ -16,7 +16,7 @@ describe Slack::Attachment do
       attachment = Slack::Attachment.from_message(message)
 
       attachment.pretext.should eq "<!channel> hello"
-      # fallback は生の pretext を保持する
+      # fallback は生の pretext を保持する。
       attachment.fallback.should eq "hello"
     end
 

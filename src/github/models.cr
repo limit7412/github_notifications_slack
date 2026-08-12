@@ -1,7 +1,7 @@
 require "json"
 
 module Github
-  # PR の CI・自動チェックの集計状態（issue #105）。
+  # PR の CI などの自動チェックの集計状態（issue #105）。
   # check runs（GitHub Actions 等）と commit status の 2 系統をまとめて表す。
   enum ChecksState
     Success  # 全て完了し、ブロックする結果が無い
@@ -23,7 +23,7 @@ module Github
     end
 
     # メンションを抑止すべき状態か。
-    # 成功・チェック未設定・取得失敗ではメンションする。取得できなかった場合に
+    # 成功、チェック未設定、取得失敗のいずれでもメンションする。取得できなかった場合に
     # 抑止すると通知の見逃しにつながるため、安全側（誤メンションを許容）に倒す。
     def blocks_mention? : Bool
       failure? || pending?
@@ -44,8 +44,8 @@ module Github
       # "ci_activity",
     }
 
-    # reason（なぜ自分に通知されたか）ごとの表示文言。update? による
-    # 「更新があったみたいです」一辺倒だと通知理由が伝わらないため、reason を
+    # reason（なぜ自分に通知されたか）ごとの表示文言。以前は update? に応じた
+    # 「更新があったみたいです」の一辺倒で通知理由が伝わらなかったため、reason を
     # 文面に反映する（issue #96）。GitHub 側の reason 追加に耐えるよう、
     # 未知の reason は reason_message で汎用文言にフォールバックする。
     REASON_MESSAGES = {
@@ -64,7 +64,7 @@ module Github
     # 「一度きりの出来事」を指す reason 向けの、2 回目以降の文言。
     #
     # GitHub の reason は「そのスレッドを購読している理由」であってイベント種別
-    # ではないため、一度レビュー依頼／アサインされた PR・Issue は、以降のコメントや
+    # ではないため、一度レビュー依頼やアサインを受けた PR / Issue は、以降のコメントや
     # 更新もすべて同じ reason で届く。REASON_MESSAGES だけだと常に「レビューを依頼
     # されました」「アサインされました」になり通知理由が実態と合わないので、
     # 初回ではないと判断できる通知は文言を差し替える（issue #104）。
@@ -110,7 +110,7 @@ module Github
     #
     # Subject#commented?（latest_comment_url が subject.url と異なる）だけでは
     # 取りこぼす。latest_comment_url は通知を発生させたイベント側を反映することが
-    # あり、コメント済みのスレッドでも push・レビュー・アサイン変更が起点の通知では
+    # あり、コメント済みのスレッドでも push やレビュー、アサイン変更が起点の通知では
     # subject.url に戻る。またレビューコメントは latest_comment_url に現れない
     # ことがあるため、レビュー上でだけ議論されている PR は常に初回扱いになる。
     # 結果、コメントの付いた PR でも「アサインされました」のままになる（issue #116）。
@@ -129,7 +129,7 @@ module Github
       detail.commented?
     end
 
-    # CI・自動チェックの状態でメンションを抑止する対象か（issue #105）。
+    # CI などの自動チェックの状態でメンションを抑止する対象か（issue #105）。
     # レビューできる状態になっていない PR で `@channel` / `@everyone` を撃たない
     # ことが目的なので、PR の通知はすべて対象にする。
     #
@@ -146,7 +146,7 @@ module Github
       subject.type == Subject::Type::PULL_REQUEST
     end
 
-    # 通知の pretext（botのセリフ）。`[<type>] <reason 文言>` 形式。
+    # 通知の pretext（bot のセリフ）。`[<type>] <reason 文言>` 形式。
     # detail は reason_message にそのまま渡す（issue #116）。
     def pretext(detail : Comment? = nil) : String
       "[#{subject.type}] #{reason_message(detail)}"
@@ -292,7 +292,7 @@ module Github
     end
 
     # スレッドにコメントが 1 件以上付いているか（issue #116）。
-    # 件数が取れない場合（コメントオブジェクト・本文取得失敗・本文なし通知）は
+    # 件数が取れない場合（コメントオブジェクト、本文取得失敗、本文なし通知）は
     # 判断材料が無いので false を返し、呼び出し側で初回向け文言に倒す。
     def commented? : Bool
       total = (comments || 0) + (review_comments || 0)

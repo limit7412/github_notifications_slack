@@ -52,7 +52,7 @@ describe Github::Subject do
     end
 
     it "returns empty for types without a comment body when no comment url is present" do
-      # CI 完了通知（CheckSuite）などは subject.url を本文取得に使わない
+      # CI 完了通知（CheckSuite）などは subject.url を本文取得に使わない。
       subject_from("CheckSuite", url: "https://api.github.com/repos/o/r/check-suites/1").comment_url.should eq ""
     end
 
@@ -99,7 +99,7 @@ describe Github::Subject do
     end
 
     it "returns nil for types whose trailing number is not a GitHub issue/PR number" do
-      # Release は末尾が数値 ID でも #番号 表示は誤解を招くため付けない
+      # Release は末尾が数値 ID でも #番号 表示は誤解を招くため付けない。
       subject_from("Release", url: "https://api.github.com/repos/o/r/releases/5").number.should be_nil
     end
 
@@ -206,7 +206,7 @@ describe Github::Notification do
     end
 
     it "keeps the assign message when the fetched payload carries no comment count" do
-      # 本文取得に失敗した場合など、判断材料が無いときは初回向け文言のままにする
+      # 本文取得に失敗した場合など、判断材料が無いときは初回向け文言のままにする。
       pull_request_without_comment_signal.reason_message(subject_detail).should eq "アサインされました"
     end
   end
