@@ -153,7 +153,7 @@ describe Notify::Usecase do
         notif("2026-01-01T00:00:04Z"),
       ]
       poster = RecordingPoster.new
-      run(notifications, poster) { |usecase| usecase.check_notifications }
+      run(notifications, poster, &.check_notifications)
 
       poster.posts.map(&.map(&.important?)).should eq [[false], [true, true], [false]]
     end
@@ -165,7 +165,7 @@ describe Notify::Usecase do
         notif("2026-01-01T00:00:03Z", title: "c"),
       ]
       poster = RecordingPoster.new
-      run(notifications, poster) { |usecase| usecase.check_notifications }
+      run(notifications, poster, &.check_notifications)
 
       poster.posts.flat_map(&.map(&.title)).should eq ["a", "b", "c"]
     end
@@ -173,7 +173,7 @@ describe Notify::Usecase do
     it "重要度が変わらなければ 1 投稿にまとめる" do
       notifications = [notif("2026-01-01T00:00:01Z"), notif("2026-01-01T00:00:02Z")]
       poster = RecordingPoster.new
-      run(notifications, poster) { |usecase| usecase.check_notifications }
+      run(notifications, poster, &.check_notifications)
 
       poster.posts.size.should eq 1
     end
