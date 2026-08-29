@@ -15,6 +15,9 @@ module Github
       comment = @repo.find_comment_by_url notify.subject.comment_url
       Notify::Message.new(
         mention: mention?(notify),
+        # 投稿の区切りは reason だけで決め、CI によるメンション抑止は反映しない
+        # （issue #120。理由は Notify::Message#important? のコメント）。
+        important: notify.mention?,
         author_name: comment.user.login,
         author_icon: comment.user.avatar_url,
         author_link: comment.user.html_url,
