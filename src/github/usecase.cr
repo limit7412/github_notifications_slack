@@ -18,9 +18,9 @@ module Github
         # 投稿の区切りは reason だけで決め、CI によるメンション抑止は反映しない
         # （issue #120。理由は Notify::Message#important? のコメント）。
         important: notify.mention?,
-        author_name: comment.user.login,
-        author_icon: comment.user.avatar_url,
-        author_link: comment.user.html_url,
+        author_name: comment.poster.login,
+        author_icon: comment.poster.avatar_url,
+        author_link: comment.poster.html_url,
         # コメントが無いスレッドでは comment は subject 本体（PR / Issue）になる。
         # その中のコメント数を文言の切り替え判定に使う（issue #116）。
         pretext: notify.pretext(comment),

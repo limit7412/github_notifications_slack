@@ -51,6 +51,18 @@ private def subject_detail(comments : Int32? = nil, review_comments : Int32? = n
   }.to_json)
 end
 
+# GitHub の Release オブジェクト。投稿者は user ではなく author に入る。
+private def release_payload
+  {
+    url:      "https://api.github.com/repos/octocat/Hello-World/releases/1",
+    html_url: "https://github.com/octocat/Hello-World/releases/tag/v1.2.3",
+    author:   {login: "octocat", avatar_url: "https://example.com/a.png"},
+    tag_name: "v1.2.3",
+    name:     "v1.2.3",
+    body:     "リリースノート本文",
+  }.to_json
+end
+
 private def build(notify, comment)
   Github::Usecase.new(StubRepo.new(comment)).build_message(notify)
 end
@@ -106,6 +118,21 @@ describe Github::Usecase do
 
     it "leaves text nil when there is no comment body" do
       build(notification, comment(body: nil)).text.should be_nil
+    end
+
+    # Release は投稿者が author に入るため、user を必須にしていたころは応答の解析に
+    # 失敗し、本文が「取得できませんでした」になっていた（issue #121）。
+    it "keeps the release notes and author of a release notification" do
+      notify = notification(
+        url: "https://api.github.com/repos/octocat/Hello-World/releases/1",
+        reason: "subscribed",
+        type: Github::Subject::Type::RELEASE,
+      )
+      message = build(notify, Github::Comment.from_json(release_payload))
+
+      message.text.should eq "リリースノート本文"
+      message.author_name.should eq "octocat"
+      message.title_link.should eq "https://github.com/octocat/Hello-World/releases/tag/v1.2.3"
     end
   end
 

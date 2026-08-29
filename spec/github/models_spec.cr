@@ -59,6 +59,12 @@ describe Github::Subject do
     it "still uses latest_comment_url even for non-body types" do
       subject_from("Commit", url: "u", latest_comment_url: "c").comment_url.should eq "c"
     end
+
+    # Release は subject.url を取得するとリリースノートが返る（issue #121）。
+    it "falls back to url for a release when latest_comment_url is blank" do
+      subject = subject_from("Release", url: "https://api.github.com/repos/o/r/releases/1")
+      subject.comment_url.should eq "https://api.github.com/repos/o/r/releases/1"
+    end
   end
 
   describe "#commented?" do
@@ -335,6 +341,42 @@ describe Github::Comment do
       Github::Comment.new(nil).commented?.should be_false
     end
   end
+
+  # Release の応答は投稿者を author に入れる。user を必須にしていたころは解析ごと
+  # 失敗し、本文が「取得できませんでした」に倒れていた（issue #121）。
+  describe "#poster" do
+    it "parses a release payload and keeps its body" do
+      comment = Github::Comment.from_json(release_payload)
+
+      comment.body.should eq "リリースノート本文"
+      comment.poster.login.should eq "octocat"
+    end
+
+    it "prefers the comment user over the author" do
+      json = {user: {login: "commenter"}, author: {login: "releaser"}, body: "b"}.to_json
+      Github::Comment.from_json(json).poster.login.should eq "commenter"
+    end
+
+    it "falls back to an empty user when the payload has neither" do
+      Github::Comment.from_json({body: "b"}.to_json).poster.login.should be_nil
+    end
+
+    it "returns an empty user for a locally built comment" do
+      Github::Comment.new("b").poster.login.should be_nil
+    end
+  end
+end
+
+# GitHub の Release オブジェクト。投稿者は user ではなく author に入る。
+private def release_payload
+  {
+    url:      "https://api.github.com/repos/o/r/releases/1",
+    html_url: "https://github.com/o/r/releases/tag/v1.2.3",
+    author:   {login: "octocat", avatar_url: "https://example.com/a.png"},
+    tag_name: "v1.2.3",
+    name:     "v1.2.3",
+    body:     "リリースノート本文",
+  }.to_json
 end
 
 private def notification_with(url = "", repo_html_url : String? = nil)

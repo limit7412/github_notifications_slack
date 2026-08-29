@@ -184,6 +184,7 @@ module Github
       ISSUE        = "Issue"
       COMMIT       = "Commit"
       DISCUSSION   = "Discussion"
+      RELEASE      = "Release"
     end
 
     UPDATE_TYPES = {
@@ -207,6 +208,10 @@ module Github
     BODY_TYPES = {
       Type::PULL_REQUEST,
       Type::ISSUE,
+      # Release も subject.url を取得すると body（リリースノート）が返る。
+      # 通知に latest_comment_url が入らない場合でも本文を出せるようにする
+      # （issue #121）。
+      Type::RELEASE,
     }
 
     def update? : Bool
@@ -278,7 +283,11 @@ module Github
   class Comment
     include JSON::Serializable
 
-    getter user : User
+    # 投稿者。コメントや Issue / PR では user だが、Release では author に入る。
+    # 必須にすると Release の応答が丸ごと解析エラーになり、本文まで
+    # 「取得できませんでした」に倒れるため、どちらも nilable で受ける（issue #121）。
+    getter user : User?
+    getter author : User?
     getter html_url : String?
     getter body : String?
     # スレッドのコメント数。subject 本体を取得したときだけ入り、コメント
@@ -288,7 +297,12 @@ module Github
     getter review_comments : Int32?
 
     def initialize(@body)
-      @user = User.new
+    end
+
+    # 表示に使う投稿者。どちらのキーも無い応答では空の User を返し、名前も
+    # アイコンも付けずに本文だけを出す。
+    def poster : User
+      user || author || User.new
     end
 
     # スレッドにコメントが 1 件以上付いているか（issue #116）。
