@@ -5,10 +5,11 @@ require "../../src/notify/repository"
 require "../../src/notify/usecase"
 
 # updated_at だけを差し替えられる通知を組み立てる。
-private def notif(updated_at : String, reason = "subscribed")
+# reason は投稿の区切り（issue #120）、title は送信順の確認に使う。
+private def notif(updated_at : String, reason = "subscribed", title = "title")
   Github::Notification.from_json({
     reason:     reason,
-    subject:    {type: "Issue", title: "title"},
+    subject:    {type: "Issue", title: title},
     repository: {owner: {login: "octocat"}},
     updated_at: updated_at,
   }.to_json)
@@ -62,6 +63,22 @@ private class ChunkPoster < Notify::PostRepository
       @sent_chunks += 1
       yield sent
     end
+  end
+end
+
+# send_messages の呼び出しごとに、受け取ったメッセージを 1 投稿ぶんとして記録する。
+# 全件を 1 投稿で送る Slack と同じく、送信後に一度だけ累計を yield する。
+# fail_at 番目（0 始まり）の投稿で例外を投げて途中失敗を再現する。
+private class RecordingPoster < Notify::PostRepository
+  getter posts = [] of Array(Notify::Message)
+
+  def initialize(@fail_at : Int32? = nil)
+  end
+
+  def send_messages(messages : Array(Notify::Message), & : Int32 ->)
+    raise "send failed" if @fail_at == @posts.size
+    @posts << messages
+    yield messages.size
   end
 end
 
@@ -123,6 +140,73 @@ describe Notify::Usecase do
         usecase.check_notifications
       end
       repo.read_calls.should be_empty
+    end
+
+    # メンション対象とそれ以外を別々の投稿に分け、`@channel` の付く投稿に
+    # 自分宛て以外を混ぜない（issue #120）。
+
+    it "メンション対象とそれ以外を別々の投稿に分ける" do
+      notifications = [
+        notif("2026-01-01T00:00:01Z"),
+        notif("2026-01-01T00:00:02Z", reason: "mention"),
+        notif("2026-01-01T00:00:03Z", reason: "review_requested"),
+        notif("2026-01-01T00:00:04Z"),
+      ]
+      poster = RecordingPoster.new
+      run(notifications, poster) { |usecase| usecase.check_notifications }
+
+      poster.posts.map(&.map(&.important?)).should eq [[false], [true, true], [false]]
+    end
+
+    it "投稿を分けても updated_at 昇順のまま送る" do
+      notifications = [
+        notif("2026-01-01T00:00:01Z", title: "a"),
+        notif("2026-01-01T00:00:02Z", reason: "mention", title: "b"),
+        notif("2026-01-01T00:00:03Z", title: "c"),
+      ]
+      poster = RecordingPoster.new
+      run(notifications, poster) { |usecase| usecase.check_notifications }
+
+      poster.posts.flat_map(&.map(&.title)).should eq ["a", "b", "c"]
+    end
+
+    it "重要度が変わらなければ 1 投稿にまとめる" do
+      notifications = [notif("2026-01-01T00:00:01Z"), notif("2026-01-01T00:00:02Z")]
+      poster = RecordingPoster.new
+      run(notifications, poster) { |usecase| usecase.check_notifications }
+
+      poster.posts.size.should eq 1
+    end
+
+    it "投稿を分けても既読化の境界は分割前と変わらない" do
+      # 投稿ごとの yield は区間内の累計だが、既読化には全体の累計が渡る。
+      # 3 投稿に分かれても、境界は未送信先頭の updated_at と取得スナップショット。
+      notifications = [
+        notif("2026-01-01T00:00:01Z"),
+        notif("2026-01-01T00:00:02Z", reason: "mention"),
+        notif("2026-01-01T00:00:03Z", reason: "review_requested"),
+        notif("2026-01-01T00:00:04Z"),
+      ]
+      repo = run(notifications, RecordingPoster.new) do |usecase|
+        usecase.check_notifications
+      end
+
+      repo.read_calls.should eq [t(2), t(4), repo.before_arg]
+    end
+
+    it "投稿の途中で失敗したら送信済みの投稿までしか既読化しない" do
+      notifications = [
+        notif("2026-01-01T00:00:01Z"),
+        notif("2026-01-01T00:00:02Z", reason: "mention"),
+        notif("2026-01-01T00:00:03Z"),
+      ]
+      repo = run(notifications, RecordingPoster.new(fail_at: 1)) do |usecase|
+        expect_raises(Exception, "send failed") { usecase.check_notifications }
+      end
+
+      # 2 投稿目（t(2)）は未送信。境界 t(2) は排他的なので t(2) 自身は既読化されず、
+      # 次回 t(2) 以降だけが再取得される。
+      repo.read_calls.should eq [t(2)]
     end
 
     it "既読化に失敗したら後続チャンクの送信を止める" do

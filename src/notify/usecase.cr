@@ -34,11 +34,42 @@ module Notify
       # チャンク送信が成功するたび、そこまでに送信済みの通知だけを既読化する。
       # 途中で失敗しても送信済み分は既読化済みなので、未送信分だけが次回
       # 再取得され、前半チャンクの重複投稿が起きない。
-      @poster.send_messages(notices) do |sent_count|
+      send_split notices do |sent_count|
         mark_read_through notifications, sent_count, fetched_at
       end
 
       {msg: "ok"}
+    end
+
+    # 重要度の高い通知（メンション対象）とそれ以外を、別々の投稿に分けて送る
+    # （issue #120）。
+    #
+    # 両者が同じ投稿に混ざると、`@channel` が付いていても、どれが自分宛てなのかは
+    # 投稿を開くまで分からない。important? が切り替わる位置で投稿を区切ると、
+    # `@channel` の付く投稿には自分宛ての通知だけが入る。
+    #
+    # 区切るのは並べ替えではなく分割なので、メッセージは updated_at 昇順のまま
+    # 送られる。既読化は「送信済みは常に先頭からのプレフィックス」であることに
+    # 依存しているため（mark_read_through 参照）、順序は保つ必要がある。
+    #
+    # 送信先アダプタを包むデコレータにする案もあったが、委譲先の静的型に
+    # デコレータ自身が含まれ、yield するブロックのインライン展開が無限再帰して
+    # コンパイルできない。累計の正しさは既読化の境界と表裏なので、
+    # mark_read_through と同じ場所に置く。
+    private def send_split(notices : Array(Message), & : Int32 ->)
+      sent = 0
+
+      # important? が同じ値で連続する区間ごとに投稿する。
+      notices.chunks(&.important?).each do |(_, run)|
+        # アダプタが yield するのは区間内の累計なので、直前までの区間の合計を
+        # 足して全体の累計に直す。呼び出し側から見える値は分割前と変わらない。
+        @poster.send_messages(run) do |count|
+          yield sent + count
+        end
+
+        # 送信の失敗は例外になる契約なので、正常に戻った時点で区間は全件送信済み。
+        sent += run.size
+      end
     end
 
     # 昇順ソート済み notifications の先頭 sent_count 件（＝送信済み）までを既読化する。
