@@ -165,6 +165,26 @@ describe Github::Usecase do
       repo.checks_calls.should eq 0
     end
   end
+
+  # 投稿を分ける基準（issue #120）。メンション自体は CI の状態で抑止されるが、
+  # 抑止されても通知の重要度は下がらないため、判定は reason だけで行う。
+  describe "#build_message important" do
+    it "marks a mention reason as important" do
+      build(notification(reason: "review_requested"), comment).important?.should be_true
+    end
+
+    it "keeps a non-mention reason unimportant" do
+      build(notification(reason: "subscribed"), comment).important?.should be_false
+    end
+
+    it "keeps a pull request important while its checks are failing" do
+      message = build_with_checks(pull_request(reason: "review_requested"), Github::ChecksState::Failure)
+
+      # チャンネル全体は叩かないが、メンション対象の投稿には入れる。
+      message.mention?.should be_false
+      message.important?.should be_true
+    end
+  end
 end
 
 private def pull_request(reason = "review_requested")
