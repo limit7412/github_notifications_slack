@@ -35,7 +35,7 @@ jobs:
         run: npm i -g serverless
 
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
