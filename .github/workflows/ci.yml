@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       # crystal: latest だと Crystal の更新でいきなり CI が壊れるため固定する。
       # 上げるときは ameba 側の対応状況と、serverless.yml のビルドイメージの
       # タグも合わせて確認すること（issue #108）。
       - name: install crystal
-        uses: crystal-lang/install-crystal@v1
+        uses: crystal-lang/install-crystal@v1.9.5
         with:
           crystal: 1.21.0
 
