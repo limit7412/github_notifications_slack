@@ -17,7 +17,7 @@ jobs:
       # 上げるときは ameba 側の対応状況と、serverless.yml のビルドイメージの
       # タグも合わせて確認すること（issue #108）。
       - name: install crystal
-        uses: crystal-lang/install-crystal@v1.9.5
+        uses: crystal-lang/install-crystal@v1.10.0
         with:
           crystal: 1.21.0
 

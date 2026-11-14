@@ -6,7 +6,7 @@ workflows:
     '.github/workflows/auto-assign.yml': []
     '.github/workflows/ci.yml':
         - 'actions/checkout@v7.0.1'
-        - 'crystal-lang/install-crystal@v1.9.5'
+        - 'crystal-lang/install-crystal@v1.10.0'
     '.github/workflows/serverless-dev.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
@@ -33,8 +33,8 @@ dependencies:
         commit: 'sha1-e1253824e5c10ff9df46874f81ed3ec929e19cfd'
         owner_id: 57468012
         repo_id: 220391287
-    'crystal-lang/install-crystal@v1.9.5':
-        ref: 'v1.9.5'
-        commit: 'sha1-36a22e9145188eec527c96e5a789ce4b832af587'
+    'crystal-lang/install-crystal@v1.10.0':
+        ref: 'v1.10.0'
+        commit: 'sha1-47f17b5ecff0cc09e96fa95f5220311329bf4bc8'
         owner_id: 6539796
         repo_id: 261006136
