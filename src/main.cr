@@ -13,6 +13,8 @@ WEBHOOK_URL       = ENV["WEBHOOK_URL"]
 ALERT_WEBHOOK_URL = ENV["ALERT_WEBHOOK_URL"]
 NOTIFY_MODE       = ENV["NOTIFY_MODE"]? || "slack"
 APP_ENV           = ENV["ENV"]
+# 通知対象から外すラベル名（カンマ区切り）。未設定なら何も除外しない。
+EXCLUDE_LABELS = Github::Usecase.parse_labels ENV["EXCLUDE_LABELS"]?
 
 # NOTIFY_MODE に応じて送信先アダプタを生成する。
 # 未設定時は既定の slack だが、想定外の値（typo 等）は起動時に例外にして
@@ -36,7 +38,7 @@ end
 github_repo = Github::NotificationRepository.new GITHUB_TOKEN
 notify_uc = Notify::Usecase.new(
   github_repo,
-  Github::Usecase.new(github_repo),
+  Github::Usecase.new(github_repo, EXCLUDE_LABELS),
   build_poster(WEBHOOK_URL),
 )
 error_uc = Error::Usecase.new(

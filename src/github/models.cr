@@ -214,8 +214,20 @@ module Github
       Type::RELEASE,
     }
 
+    # ラベルが付く type。subject.url を取得すると labels を含むオブジェクトが返る。
+    LABELED_TYPES = {
+      Type::PULL_REQUEST,
+      Type::ISSUE,
+    }
+
     def update? : Bool
       type.in?(UPDATE_TYPES)
+    end
+
+    # ラベルを持つ type か。ラベルで通知を除外できるのはこの type に限る
+    # （Github::Usecase#excluded?）。
+    def labeled? : Bool
+      type.in?(LABELED_TYPES)
     end
 
     def color : String
@@ -322,6 +334,24 @@ module Github
     getter html_url : String?
 
     def initialize
+    end
+  end
+
+  # ラベルによる除外の判定に使う subject 本体（PR / Issue）。labels だけ参照する。
+  class Labeled
+    include JSON::Serializable
+
+    getter labels : Array(Label) = [] of Label
+
+    # 比較用に小文字へ揃えたラベル名。GitHub のラベル名は大文字小文字を区別しない。
+    def label_names : Set(String)
+      labels.map(&.name.downcase).to_set
+    end
+
+    class Label
+      include JSON::Serializable
+
+      getter name : String = ""
     end
   end
 

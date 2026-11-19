@@ -11,6 +11,7 @@ WEBHOOK_URL: <通知用webhook>
 ALERT_WEBHOOK_URL: <アラート用webhook>
 GITHUB_TOKEN: <token>
 NOTIFY_MODE: <slack | discord（省略時 slack）>
+EXCLUDE_LABELS: <通知対象から外すラベル名（カンマ区切り。省略時は除外しない）>
 ENV: <環境名>
 ```
 
@@ -30,6 +31,25 @@ Slack では `@channel`（`<!channel>`）、Discord では `@everyone` を使う
 ただし PR の通知は、CI などの自動チェックが失敗中・実行中のあいだメンションしない。
 レビューできる状態になっていない PR でチャンネル全体を叩かないため。
 通知そのものは従来どおり届く。
+
+## ラベルによる除外
+
+`EXCLUDE_LABELS` に指定したラベルが 1 つでも付いている PR / Issue の通知は送らない。
+自動マージされる PR のように、人が確認しなくてよい通知を流さないための設定。
+
+```
+EXCLUDE_LABELS: automerge,dependencies
+```
+
+ラベル名はカンマ区切りで複数指定でき、大文字小文字は区別しない（GitHub のラベル名と同じ扱い）。
+省略した場合は除外しない。
+
+除外した通知も GitHub 上では既読にする。
+未読のまま残すと、毎分の実行で取得され続けるため。
+
+通知の payload にラベルは含まれないので、指定した場合は PR / Issue の通知 1 件につき
+API 呼び出しが 1 回増える。
+ラベルを取得できなかった通知は除外せずに送る。
 
 ## 投稿の分割
 

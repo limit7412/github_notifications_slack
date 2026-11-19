@@ -28,14 +28,29 @@ module Notify
 
       return {msg: "ok"} if notifications.empty?
 
+      # 除外ラベル（EXCLUDE_LABELS）の付いた通知は送信対象から外す。
+      #
+      # 外した通知も既読化はする。未読のまま残すと、毎分取得されてそのたびに
+      # ラベルを調べ直すことになる。既読化の境界は送信対象だけで決めてよい。
+      # 境界より前に更新された通知は外したものも含めて既読化され、境界以降の
+      # ものは未読に残って次回もう一度判定されるだけで、送信はされない。
+      targets = notifications.reject { |item| @github_uc.excluded? item }
+
+      # 全件を外した場合は送信が起きず、送信後の既読化も呼ばれない。
+      # 取得した集合をここで既読化して、次回の再取得を止める。
+      if targets.empty?
+        @github_repo.notification_to_read fetched_at
+        return {msg: "ok"}
+      end
+
       # pretext は reason（なぜ通知されたか）を反映した文言になる（issue #96）。
-      notices = notifications.map { |item| @github_uc.build_message item }
+      notices = targets.map { |item| @github_uc.build_message item }
 
       # チャンク送信が成功するたび、そこまでに送信済みの通知だけを既読化する。
       # 途中で失敗しても送信済み分は既読化済みなので、未送信分だけが次回
       # 再取得され、前半チャンクの重複投稿が起きない。
       send_split notices do |sent_count|
-        mark_read_through notifications, sent_count, fetched_at
+        mark_read_through targets, sent_count, fetched_at
       end
 
       {msg: "ok"}
