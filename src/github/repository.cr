@@ -153,6 +153,28 @@ module Github
       runs.merge find_combined_status_state("/repos/#{repo}/commits/#{sha}/status?per_page=#{CHECKS_PER_PAGE}")
     end
 
+    # 通知対象（PR / Issue）に付いているラベル名を小文字で返す。
+    #
+    # 通知の payload にラベルは含まれないため、subject 本体を取得して調べる。
+    # 本文表示用に取得するオブジェクト（find_comment_by_url）は、スレッドにコメントが
+    # あるとコメント側になりラベルを持たないので、それとは別に取得する。
+    #
+    # ラベルを持たない type と取得できなかった場合は空集合を返す。空集合なら
+    # 呼び出し側は除外しないので、取得の失敗で通知が消えることはない。
+    def find_labels(notify : Notification) : Set(String)
+      empty = Set(String).new
+      return empty unless notify.subject.labeled?
+      return empty unless url = notify.subject.url.presence
+      return empty unless body = get_body url
+
+      begin
+        Labeled.from_json(body).label_names
+      rescue
+        Serverless::Lambda.print_log "failed parse labels data"
+        empty
+      end
+    end
+
     private def find_head_sha(path : String) : String?
       return unless body = get_body path
 

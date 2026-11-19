@@ -67,7 +67,50 @@ private def build(notify, comment)
   Github::Usecase.new(StubRepo.new(comment)).build_message(notify)
 end
 
+# あらかじめ用意したラベルを返すリポジトリ。
+private class LabelRepo < Github::NotificationRepository
+  def initialize(@labels : Set(String))
+    super("token")
+  end
+
+  def find_labels(notify : Github::Notification) : Set(String)
+    @labels
+  end
+end
+
 describe Github::Usecase do
+  describe ".parse_labels" do
+    it "カンマ区切りを小文字の集合にする" do
+      Github::Usecase.parse_labels("automerge, Dependencies").should eq Set{"automerge", "dependencies"}
+    end
+
+    it "空要素を読み捨てる" do
+      Github::Usecase.parse_labels(" ,automerge,,").should eq Set{"automerge"}
+    end
+
+    it "未設定なら空集合を返す" do
+      Github::Usecase.parse_labels(nil).should be_empty
+      Github::Usecase.parse_labels("").should be_empty
+    end
+  end
+
+  describe "#excluded?" do
+    it "除外ラベルが付いていれば true を返す" do
+      usecase = Github::Usecase.new LabelRepo.new(Set{"automerge", "bug"}), Set{"automerge"}
+      usecase.excluded?(notification).should be_true
+    end
+
+    it "除外ラベルが付いていなければ false を返す" do
+      usecase = Github::Usecase.new LabelRepo.new(Set{"bug"}), Set{"automerge"}
+      usecase.excluded?(notification).should be_false
+    end
+
+    it "除外ラベルが未設定なら false を返す" do
+      usecase = Github::Usecase.new LabelRepo.new(Set{"automerge"})
+      usecase.excluded?(notification).should be_false
+    end
+  end
+
   describe "#build_message" do
     it "reflects the reason in the pretext" do
       build(notification(reason: "review_requested"), comment).pretext.should eq "[Issue] レビューを依頼されました"

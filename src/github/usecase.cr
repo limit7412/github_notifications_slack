@@ -8,7 +8,27 @@ module Github
     # 防ぐため組み立て側（Slack / Discord 共通）で切り詰める（issue #96）。
     BODY_LIMIT = 500
 
-    def initialize(@repo : NotificationRepository)
+    # exclude_labels は通知対象から外すラベル名（parse_labels で正規化した集合）。
+    def initialize(@repo : NotificationRepository, @exclude_labels : Set(String) = Set(String).new)
+    end
+
+    # カンマ区切りのラベル名（環境変数 EXCLUDE_LABELS）を集合にする。
+    # GitHub のラベル名は大文字小文字を区別しないため、比較用に小文字へ揃える。
+    # 前後の空白と空要素（末尾のカンマなど）は設定の揺れとして読み捨てる。
+    def self.parse_labels(raw : String?) : Set(String)
+      return Set(String).new unless raw
+
+      raw.split(',').map(&.strip.downcase).reject(&.empty?).to_set
+    end
+
+    # 除外ラベルが付いていて、通知対象から外す通知か。
+    #
+    # 除外ラベルが未設定ならラベルを取得せずに false を返す。設定しない限り
+    # API 呼び出しは増えない。
+    def excluded?(notify : Notification) : Bool
+      return false if @exclude_labels.empty?
+
+      @repo.find_labels(notify).intersects?(@exclude_labels)
     end
 
     def build_message(notify : Notification) : Notify::Message

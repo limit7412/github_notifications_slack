@@ -502,3 +502,23 @@ NOTIFICATIONS_FIXTURE = <<-JSON
     }
   ]
   JSON
+
+describe Github::Labeled do
+  it "ラベル名を小文字の集合で返す" do
+    labeled = Github::Labeled.from_json({labels: [{name: "AutoMerge"}, {name: "bug"}]}.to_json)
+    labeled.label_names.should eq Set{"automerge", "bug"}
+  end
+
+  it "labels が無ければ空集合を返す" do
+    Github::Labeled.from_json("{}").label_names.should be_empty
+  end
+end
+
+describe Github::Subject do
+  it "PR と Issue だけをラベルを持つ type とみなす" do
+    labeled = %w[PullRequest Issue Commit Discussion Release].select do |type|
+      Github::Subject.from_json({type: type}.to_json).labeled?
+    end
+    labeled.should eq %w[PullRequest Issue]
+  end
+end
