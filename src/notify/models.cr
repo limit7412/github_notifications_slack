@@ -10,6 +10,9 @@ module Notify
     # ための抑止（issue #105）が掛かった後の値で、抑止されても通知の重要度自体は
     # 下がらない。両者を同じフラグにすると、CI が赤いレビュー依頼が通常の通知に
     # 混ざってしまう。
+    #
+    # 除外ラベル（EXCLUDE_LABELS）の付いた通知は、mention 系 reason でも false になる
+    # （Github::Usecase#addressed?）。
     getter? important : Bool
     getter author_name : String?
     getter author_icon : String?

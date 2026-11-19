@@ -13,7 +13,7 @@ WEBHOOK_URL       = ENV["WEBHOOK_URL"]
 ALERT_WEBHOOK_URL = ENV["ALERT_WEBHOOK_URL"]
 NOTIFY_MODE       = ENV["NOTIFY_MODE"]? || "slack"
 APP_ENV           = ENV["ENV"]
-# 通知対象から外すラベル名（カンマ区切り）。未設定なら何も除外しない。
+# メンションの対象から外すラベル名（カンマ区切り）。未設定なら何も外さない。
 EXCLUDE_LABELS = Github::Usecase.parse_labels ENV["EXCLUDE_LABELS"]?
 
 # NOTIFY_MODE に応じて送信先アダプタを生成する。

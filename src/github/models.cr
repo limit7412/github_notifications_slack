@@ -224,8 +224,8 @@ module Github
       type.in?(UPDATE_TYPES)
     end
 
-    # ラベルを持つ type か。ラベルで通知を除外できるのはこの type に限る
-    # （Github::Usecase#excluded?）。
+    # ラベルを持つ type か。ラベルでメンションの対象から外せるのはこの type に限る
+    # （Github::Usecase#addressed?）。
     def labeled? : Bool
       type.in?(LABELED_TYPES)
     end
@@ -337,7 +337,7 @@ module Github
     end
   end
 
-  # ラベルによる除外の判定に使う subject 本体（PR / Issue）。labels だけ参照する。
+  # ラベルによるメンション除外の判定に使う subject 本体（PR / Issue）。labels だけ参照する。
   class Labeled
     include JSON::Serializable
 

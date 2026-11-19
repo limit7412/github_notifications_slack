@@ -67,14 +67,27 @@ private def build(notify, comment)
   Github::Usecase.new(StubRepo.new(comment)).build_message(notify)
 end
 
-# あらかじめ用意したラベルを返すリポジトリ。
+# あらかじめ用意したラベルを返し、ラベルとチェック状態の取得回数を記録するリポジトリ。
 private class LabelRepo < Github::NotificationRepository
+  getter labels_calls = 0
+  getter checks_calls = 0
+
   def initialize(@labels : Set(String))
     super("token")
   end
 
+  def find_comment_by_url(url : String) : Github::Comment
+    Github::Comment.new "body"
+  end
+
   def find_labels(notify : Github::Notification) : Set(String)
+    @labels_calls += 1
     @labels
+  end
+
+  def find_checks_state(notify : Github::Notification) : Github::ChecksState
+    @checks_calls += 1
+    Github::ChecksState::Success
   end
 end
 
@@ -91,23 +104,6 @@ describe Github::Usecase do
     it "未設定なら空集合を返す" do
       Github::Usecase.parse_labels(nil).should be_empty
       Github::Usecase.parse_labels("").should be_empty
-    end
-  end
-
-  describe "#excluded?" do
-    it "除外ラベルが付いていれば true を返す" do
-      usecase = Github::Usecase.new LabelRepo.new(Set{"automerge", "bug"}), Set{"automerge"}
-      usecase.excluded?(notification).should be_true
-    end
-
-    it "除外ラベルが付いていなければ false を返す" do
-      usecase = Github::Usecase.new LabelRepo.new(Set{"bug"}), Set{"automerge"}
-      usecase.excluded?(notification).should be_false
-    end
-
-    it "除外ラベルが未設定なら false を返す" do
-      usecase = Github::Usecase.new LabelRepo.new(Set{"automerge"})
-      usecase.excluded?(notification).should be_false
     end
   end
 
@@ -237,7 +233,7 @@ describe Github::Usecase do
   end
 
   # 投稿を分ける基準（issue #120）。メンション自体は CI の状態で抑止されるが、
-  # 抑止されても通知の重要度は下がらないため、判定は reason だけで行う。
+  # 抑止されても通知の重要度は下がらないため、CI の状態は判定に使わない。
   describe "#build_message important" do
     it "marks a mention reason as important" do
       build(notification(reason: "review_requested"), comment).important?.should be_true
@@ -253,6 +249,51 @@ describe Github::Usecase do
       # チャンネル全体は叩かないが、メンション対象の投稿には入れる。
       message.mention?.should be_false
       message.important?.should be_true
+    end
+  end
+
+  # 除外ラベル（EXCLUDE_LABELS）の付いた通知は、送るがメンションの対象にしない。
+  describe "#build_message exclude labels" do
+    it "除外ラベルの付いた通知はメンションせず、通常の通知として扱う" do
+      repo = LabelRepo.new Set{"automerge", "bug"}
+      message = Github::Usecase.new(repo, Set{"automerge"}).build_message(notification(reason: "review_requested"))
+
+      message.mention?.should be_false
+      message.important?.should be_false
+    end
+
+    it "除外ラベルが付いていなければメンションする" do
+      repo = LabelRepo.new Set{"bug"}
+      message = Github::Usecase.new(repo, Set{"automerge"}).build_message(notification(reason: "review_requested"))
+
+      message.mention?.should be_true
+      message.important?.should be_true
+    end
+
+    it "除外ラベルの付いた PR ではチェック状態を取得しない" do
+      repo = LabelRepo.new Set{"automerge"}
+      notify = notification(
+        url: "https://api.github.com/repos/octocat/Hello-World/pulls/42",
+        type: "PullRequest",
+      )
+      Github::Usecase.new(repo, Set{"automerge"}).build_message(notify).mention?.should be_false
+
+      repo.checks_calls.should eq 0
+    end
+
+    it "除外ラベルが未設定ならラベルを取得しない" do
+      repo = LabelRepo.new Set{"automerge"}
+      message = Github::Usecase.new(repo).build_message(notification(reason: "review_requested"))
+
+      message.mention?.should be_true
+      repo.labels_calls.should eq 0
+    end
+
+    it "メンションしない reason ではラベルを取得しない" do
+      repo = LabelRepo.new Set{"automerge"}
+      Github::Usecase.new(repo, Set{"automerge"}).build_message(notification(reason: "subscribed"))
+
+      repo.labels_calls.should eq 0
     end
   end
 end

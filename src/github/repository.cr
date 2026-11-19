@@ -160,7 +160,8 @@ module Github
     # あるとコメント側になりラベルを持たないので、それとは別に取得する。
     #
     # ラベルを持たない type と取得できなかった場合は空集合を返す。空集合なら
-    # 呼び出し側は除外しないので、取得の失敗で通知が消えることはない。
+    # 呼び出し側はメンションの対象から外さないので、取得の失敗でメンションが
+    # 消えることはない。
     def find_labels(notify : Notification) : Set(String)
       empty = Set(String).new
       return empty unless notify.subject.labeled?
