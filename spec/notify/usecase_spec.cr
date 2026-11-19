@@ -24,9 +24,6 @@ end
 private class FakeNotificationRepo < Github::NotificationRepository
   getter read_calls = [] of Time?
   getter before_arg : Time?
-  # 通知の title をキーに、付いているラベルを指定する。
-  property labels = {} of String => Set(String)
-  getter labels_calls = 0
 
   # raise_read_after 回目の既読化呼び出しで例外を投げ、既読化失敗を再現する。
   def initialize(@notifications : Array(Github::Notification), @raise_read_after : Int32? = nil)
@@ -40,11 +37,6 @@ private class FakeNotificationRepo < Github::NotificationRepository
 
   def find_comment_by_url(url : String) : Github::Comment
     Github::Comment.new "body"
-  end
-
-  def find_labels(notify : Github::Notification) : Set(String)
-    @labels_calls += 1
-    @labels[notify.subject.title]? || Set(String).new
   end
 
   def notification_to_read(last_read_at : Time? = nil)
@@ -93,15 +85,6 @@ end
 private def run(notifications, poster, &)
   repo = FakeNotificationRepo.new notifications
   usecase = Notify::Usecase.new repo, Github::Usecase.new(repo), poster
-  yield usecase
-  repo
-end
-
-# automerge ラベルを除外対象にし、labels で指定した title の通知にそのラベルを付けて実行する。
-private def run_excluding(notifications, poster, labeled : Array(String), &)
-  repo = FakeNotificationRepo.new notifications
-  labeled.each { |title| repo.labels[title] = Set{"automerge"} }
-  usecase = Notify::Usecase.new repo, Github::Usecase.new(repo, Set{"automerge"}), poster
   yield usecase
   repo
 end
@@ -224,69 +207,6 @@ describe Notify::Usecase do
       # 2 投稿目（t(2)）は未送信。境界 t(2) は排他的なので t(2) 自身は既読化されず、
       # 次回 t(2) 以降だけが再取得される。
       repo.read_calls.should eq [t(2)]
-    end
-
-    # 除外ラベル（EXCLUDE_LABELS）の付いた通知は送らないが、既読化はする。
-
-    it "除外ラベルの付いた通知は送らない" do
-      notifications = [
-        notif("2026-01-01T00:00:01Z", title: "a"),
-        notif("2026-01-01T00:00:02Z", title: "b"),
-        notif("2026-01-01T00:00:03Z", title: "c"),
-      ]
-      poster = RecordingPoster.new
-      run_excluding(notifications, poster, labeled: ["b"], &.check_notifications)
-
-      poster.posts.flat_map(&.map(&.title)).should eq ["a", "c"]
-    end
-
-    it "除外した通知も送信対象と一緒に既読化する" do
-      notifications = [
-        notif("2026-01-01T00:00:01Z", title: "a"),
-        notif("2026-01-01T00:00:02Z", title: "b"),
-      ]
-      repo = run_excluding(notifications, RecordingPoster.new, labeled: ["b"]) do |usecase|
-        usecase.check_notifications
-      end
-
-      # 送信対象は a だけ。全件送信済みなので境界は取得スナップショットまで進み、
-      # 除外した b（t(2)）も既読化される。
-      repo.read_calls.should eq [repo.before_arg]
-    end
-
-    it "未送信の通知より後に更新された除外通知は既読化しない" do
-      notifications = [
-        notif("2026-01-01T00:00:01Z", title: "a"),
-        notif("2026-01-01T00:00:02Z", reason: "mention", title: "b"),
-        notif("2026-01-01T00:00:03Z", title: "c"),
-      ]
-      repo = run_excluding(notifications, RecordingPoster.new(fail_at: 1), labeled: ["c"]) do |usecase|
-        expect_raises(Exception, "send failed") { usecase.check_notifications }
-      end
-
-      # b の送信に失敗。境界は b の t(2) で、それより後の c は未読に残り、
-      # 次回もう一度ラベルを判定される。
-      repo.read_calls.should eq [t(2)]
-    end
-
-    it "全件が除外されたら送信せずに既読化する" do
-      notifications = [notif("2026-01-01T00:00:01Z", title: "a")]
-      poster = RecordingPoster.new
-      repo = run_excluding(notifications, poster, labeled: ["a"]) do |usecase|
-        usecase.check_notifications
-      end
-
-      poster.posts.should be_empty
-      repo.read_calls.should eq [repo.before_arg]
-    end
-
-    it "除外ラベルが未設定ならラベルを取得しない" do
-      notifications = [notif("2026-01-01T00:00:01Z")]
-      repo = run(notifications, RecordingPoster.new) do |usecase|
-        usecase.check_notifications
-      end
-
-      repo.labels_calls.should eq 0
     end
 
     it "既読化に失敗したら後続チャンクの送信を止める" do

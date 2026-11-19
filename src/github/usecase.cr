@@ -8,7 +8,7 @@ module Github
     # 防ぐため組み立て側（Slack / Discord 共通）で切り詰める（issue #96）。
     BODY_LIMIT = 500
 
-    # exclude_labels は通知対象から外すラベル名（parse_labels で正規化した集合）。
+    # exclude_labels はメンションの対象から外すラベル名（parse_labels で正規化した集合）。
     def initialize(@repo : NotificationRepository, @exclude_labels : Set(String) = Set(String).new)
     end
 
@@ -21,23 +21,14 @@ module Github
       raw.split(',').map(&.strip.downcase).reject(&.empty?).to_set
     end
 
-    # 除外ラベルが付いていて、通知対象から外す通知か。
-    #
-    # 除外ラベルが未設定ならラベルを取得せずに false を返す。設定しない限り
-    # API 呼び出しは増えない。
-    def excluded?(notify : Notification) : Bool
-      return false if @exclude_labels.empty?
-
-      @repo.find_labels(notify).intersects?(@exclude_labels)
-    end
-
     def build_message(notify : Notification) : Notify::Message
       comment = @repo.find_comment_by_url notify.subject.comment_url
+      addressed = addressed?(notify)
       Notify::Message.new(
-        mention: mention?(notify),
-        # 投稿の区切りは reason だけで決め、CI によるメンション抑止は反映しない
+        mention: addressed && checks_allow_mention?(notify),
+        # 投稿の区切りには、CI によるメンション抑止を反映しない
         # （issue #120。理由は Notify::Message#important? のコメント）。
-        important: notify.mention?,
+        important: addressed,
         author_name: comment.poster.login,
         author_icon: comment.poster.avatar_url,
         author_link: comment.poster.html_url,
@@ -53,13 +44,33 @@ module Github
       )
     end
 
-    # メンション（`@channel` / `@everyone`）を付けるか。
+    # 自分宛てとして扱う通知か。メンションと投稿の区切りの両方の前提になる。
     #
-    # mention 系 reason であることに加え、PR は CI などの自動チェックが失敗中でも
-    # 実行中でもないことを条件にする。まだレビューできる状態ではない PR でチャンネル全体を
-    # 叩かないため（issue #105）。通知そのものは抑止しない。
-    private def mention?(notify : Notification) : Bool
+    # mention 系 reason であっても、除外ラベル（EXCLUDE_LABELS）の付いた PR / Issue は
+    # 自分宛てとして扱わない。自動マージされる PR のように人が確認しなくてよい通知で
+    # チャンネル全体を叩かないためである。通知そのものは通常の通知として届く。
+    #
+    # CI によるメンション抑止（checks_allow_mention?）と違い、こちらは投稿の区切りにも
+    # 反映する。CI が赤い PR は確認が要る通知のままだが、除外ラベルの付いた通知は
+    # 確認が要らないので、`@channel` の付く投稿に混ぜない。
+    #
+    # ラベルを調べるのは mention 系 reason の通知に限る。それ以外はもともと
+    # メンションしないので、ラベルを取得しても結果が変わらない。除外ラベルが
+    # 未設定のときも取得しない。
+    private def addressed?(notify : Notification) : Bool
       return false unless notify.mention?
+      return true if @exclude_labels.empty?
+
+      !@repo.find_labels(notify).intersects?(@exclude_labels)
+    end
+
+    # CI などの自動チェックの状態から見て、メンション（`@channel` / `@everyone`）を
+    # 付けてよいか。
+    #
+    # PR は自動チェックが失敗中でも実行中でもないことを条件にする。まだレビューできる
+    # 状態ではない PR でチャンネル全体を叩かないため（issue #105）。通知そのものは
+    # 抑止しない。
+    private def checks_allow_mention?(notify : Notification) : Bool
       return true unless notify.checks_gated?
 
       !@repo.find_checks_state(notify).blocks_mention?
