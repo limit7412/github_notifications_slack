@@ -516,9 +516,9 @@ end
 
 describe Github::Subject do
   it "PR と Issue だけをラベルを持つ type とみなす" do
-    labeled = %w(PullRequest Issue Commit Discussion Release).select do |type|
+    labeled = %w[PullRequest Issue Commit Discussion Release].select do |type|
       Github::Subject.from_json({type: type}.to_json).labeled?
     end
-    labeled.should eq %w(PullRequest Issue)
+    labeled.should eq %w[PullRequest Issue]
   end
 end
